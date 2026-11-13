@@ -1,0 +1,13 @@
+tests/mimiboot_tests
+tests/*.exe
+build*/
+keys/*.key
+*.mimg.bin
+
+release/
+build-night*/
+__pycache__/
+build-console.log
+.config
+.config.old
+__pycache__/

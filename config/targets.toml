@@ -1,0 +1,1206 @@
+# MimiBoot-Mu target database
+#
+#   [family.X]  register addresses / bit positions shared by a chip family
+#   [chip.X]    memory: flash, RAM, erase sectors ("4x16K,1x64K,3x128K"), family
+#   [board.X]   what you pick in mimiconf: a chip + pins + console settings
+#
+# status: what has actually been checked, per board (see docs/HARDWARE-STATUS.md)
+#   "hardware"  ran on a real board        "emulator"  booted in QEMU / simavr
+#   "built"     compiles and links, never ran          "host"  core logic host-tested only
+#
+# Adding a board is usually a [board] entry for an existing [chip]; a new chip in
+# a known family is a [chip] entry. No C needed.
+#
+# Bare-metal Cortex-M families (build = "mcu") also say: vendor (stm32 / nrf / samd),
+# flash_base, clock_hz, vectors (vtor / remap / relay), vtor_align, nvic_words,
+# time (systick / timer), mcuboot_hdr (where a Zephyr image's vector table lands).
+
+# ===========================================================================
+# STM32 families (bare-metal full core: port/cortexm + port/stm32)
+# ===========================================================================
+[family.stm32f0]
+maker = "st"
+core = "night"
+build = "mcu"
+vendor = "stm32"
+cpu = "cortex-m0"
+flash_driver = "F0F1"
+flash_regs = 0x40022000
+sysmem = 0x1FFFEC00
+rcc = 0x40021000
+rcc_csr = 0x24
+rmvf_bit = 24
+clock_hz = 8000000
+lsi_hz = 40000
+gpio = { base = 0x48000000, stride = 0x400, kind = "moder", rcc_off = 0x14, rcc_bit0 = 17 }
+uarts.usart1 = { base = 0x40013800, kind = "modern", rcc_off = 0x18, rcc_bit = 14 }
+uarts.usart2 = { base = 0x40004400, kind = "modern", rcc_off = 0x1C, rcc_bit = 17 }
+vectors = "remap"
+nvic_words = 1
+m0_vectors = 48
+
+[family.stm32f1]
+maker = "st"
+core = "night"
+build = "mcu"
+vendor = "stm32"
+cpu = "cortex-m3"
+flash_driver = "F0F1"
+flash_regs = 0x40022000
+sysmem = 0x1FFFF000
+rcc = 0x40021000
+rcc_csr = 0x24
+rmvf_bit = 24
+clock_hz = 8000000
+lsi_hz = 40000
+gpio = { base = 0x40010800, stride = 0x400, kind = "f1", rcc_off = 0x18, rcc_bit0 = 2 }
+uarts.usart1 = { base = 0x40013800, kind = "legacy", rcc_off = 0x18, rcc_bit = 14 }
+uarts.usart2 = { base = 0x40004400, kind = "legacy", rcc_off = 0x1C, rcc_bit = 17 }
+uarts.usart3 = { base = 0x40004800, kind = "legacy", rcc_off = 0x1C, rcc_bit = 18 }
+nvic_words = 8
+
+[family.stm32f3]
+maker = "st"
+core = "night"
+build = "mcu"
+vendor = "stm32"
+cpu = "cortex-m4"
+flash_driver = "F0F1"
+flash_regs = 0x40022000
+sysmem = 0x1FFFD800
+rcc = 0x40021000
+rcc_csr = 0x24
+rmvf_bit = 24
+clock_hz = 8000000
+lsi_hz = 40000
+gpio = { base = 0x48000000, stride = 0x400, kind = "moder", rcc_off = 0x14, rcc_bit0 = 17 }
+uarts.usart1 = { base = 0x40013800, kind = "modern", rcc_off = 0x18, rcc_bit = 14 }
+uarts.usart2 = { base = 0x40004400, kind = "modern", rcc_off = 0x1C, rcc_bit = 17 }
+nvic_words = 8
+
+[family.stm32f2]
+maker = "st"
+core = "night"
+build = "mcu"
+vendor = "stm32"
+cpu = "cortex-m3"
+flash_driver = "F2F4"
+flash_regs = 0x40023C00
+sysmem = 0x1FFF0000
+rcc = 0x40023800
+rcc_csr = 0x74
+rmvf_bit = 24
+clock_hz = 16000000
+lsi_hz = 32000
+gpio = { base = 0x40020000, stride = 0x400, kind = "moder", rcc_off = 0x30, rcc_bit0 = 0 }
+uarts.usart1 = { base = 0x40011000, kind = "legacy", rcc_off = 0x44, rcc_bit = 4 }
+uarts.usart2 = { base = 0x40004400, kind = "legacy", rcc_off = 0x40, rcc_bit = 17 }
+nvic_words = 8
+
+[family.stm32f4]
+maker = "st"
+core = "night"
+build = "mcu"
+vendor = "stm32"
+cpu = "cortex-m4"
+flash_driver = "F2F4"
+flash_regs = 0x40023C00
+sysmem = 0x1FFF0000
+rcc = 0x40023800
+rcc_csr = 0x74
+rmvf_bit = 24
+clock_hz = 16000000
+lsi_hz = 32000
+gpio = { base = 0x40020000, stride = 0x400, kind = "moder", rcc_off = 0x30, rcc_bit0 = 0 }
+uarts.usart1 = { base = 0x40011000, kind = "legacy", rcc_off = 0x44, rcc_bit = 4 }
+uarts.usart2 = { base = 0x40004400, kind = "legacy", rcc_off = 0x40, rcc_bit = 17 }
+uarts.usart6 = { base = 0x40011400, kind = "legacy", rcc_off = 0x44, rcc_bit = 5 }
+nvic_words = 8
+
+[family.stm32f7]
+maker = "st"
+core = "night"
+build = "mcu"
+vendor = "stm32"
+cpu = "cortex-m7"
+flash_driver = "F2F4"
+flash_regs = 0x40023C00
+sysmem = 0x1FF00000
+rcc = 0x40023800
+rcc_csr = 0x74
+rmvf_bit = 24
+clock_hz = 16000000
+lsi_hz = 32000
+gpio = { base = 0x40020000, stride = 0x400, kind = "moder", rcc_off = 0x30, rcc_bit0 = 0 }
+uarts.usart1 = { base = 0x40011000, kind = "modern", rcc_off = 0x44, rcc_bit = 4 }
+uarts.usart3 = { base = 0x40004800, kind = "modern", rcc_off = 0x40, rcc_bit = 18 }
+nvic_words = 8
+
+[family.stm32l4]
+maker = "st"
+core = "night"
+build = "mcu"
+vendor = "stm32"
+cpu = "cortex-m4"
+flash_driver = "L4G0G4"
+flash_regs = 0x40022000
+sysmem = 0x1FFF0000
+bker_bit = 11
+rcc = 0x40021000
+rcc_csr = 0x94
+rmvf_bit = 23
+clock_hz = 16000000
+clock_l4_hsi16 = true
+lsi_hz = 32000
+gpio = { base = 0x48000000, stride = 0x400, kind = "moder", rcc_off = 0x4C, rcc_bit0 = 0 }
+uarts.usart1 = { base = 0x40013800, kind = "modern", rcc_off = 0x60, rcc_bit = 14 }
+uarts.usart2 = { base = 0x40004400, kind = "modern", rcc_off = 0x58, rcc_bit = 17 }
+uarts.lpuart1 = { base = 0x40008000, kind = "lpuart", rcc_off = 0x5C, rcc_bit = 0 }
+nvic_words = 8
+
+[family.stm32g0]
+maker = "st"
+core = "night"
+build = "mcu"
+vendor = "stm32"
+cpu = "cortex-m0plus"
+flash_driver = "L4G0G4"
+flash_regs = 0x40022000
+sysmem = 0x1FFF0000
+bker_bit = 13
+rcc = 0x40021000
+rcc_csr = 0x60
+rmvf_bit = 23
+clock_hz = 16000000
+lsi_hz = 32000
+gpio = { base = 0x50000000, stride = 0x400, kind = "moder", rcc_off = 0x34, rcc_bit0 = 0 }
+uarts.usart1 = { base = 0x40013800, kind = "modern", rcc_off = 0x40, rcc_bit = 14 }
+uarts.usart2 = { base = 0x40004400, kind = "modern", rcc_off = 0x3C, rcc_bit = 17 }
+uarts.lpuart1 = { base = 0x40008000, kind = "lpuart", rcc_off = 0x3C, rcc_bit = 20 }
+nvic_words = 1
+
+[family.stm32g4]
+maker = "st"
+core = "night"
+build = "mcu"
+vendor = "stm32"
+cpu = "cortex-m4"
+flash_driver = "L4G0G4"
+flash_regs = 0x40022000
+sysmem = 0x1FFF0000
+bker_bit = 11
+rcc = 0x40021000
+rcc_csr = 0x94
+rmvf_bit = 23
+clock_hz = 16000000
+lsi_hz = 32000
+gpio = { base = 0x48000000, stride = 0x400, kind = "moder", rcc_off = 0x4C, rcc_bit0 = 0 }
+uarts.usart1 = { base = 0x40013800, kind = "modern", rcc_off = 0x60, rcc_bit = 14 }
+uarts.usart2 = { base = 0x40004400, kind = "modern", rcc_off = 0x58, rcc_bit = 17 }
+uarts.lpuart1 = { base = 0x40008000, kind = "lpuart", rcc_off = 0x5C, rcc_bit = 0 }
+nvic_words = 8
+
+# ---- STM32 chips -----------------------------------------------------------
+[chip.stm32f030r8]
+family = "stm32f0"
+flash = "64K"
+ram = "8K"
+sectors = "64x1K"
+boot = "24K"
+defaults = { CONSOLE = false, RECV = false, CONTROL = false, SIGNATURES = false }
+[chip.stm32f072rb]
+family = "stm32f0"
+flash = "128K"
+ram = "16K"
+sectors = "64x2K"
+boot = "32K"
+defaults = { SIGNATURES = false }
+sysmem = 0x1FFFC800
+[chip.stm32f100rb]
+family = "stm32f1"
+flash = "128K"
+ram = "8K"
+sectors = "128x1K"
+boot = "32K"
+defaults = { SIGNATURES = false, RECV = false, CONTROL = false }
+[chip.stm32f103c8]
+family = "stm32f1"
+flash = "64K"
+ram = "20K"
+sectors = "64x1K"
+boot = "24K"
+defaults = { CONSOLE = false, RECV = false, CONTROL = false }
+[chip.stm32f103cb]
+family = "stm32f1"
+flash = "128K"
+ram = "20K"
+sectors = "128x1K"
+boot = "32K"
+defaults = { SIGNATURES = false }
+[chip.stm32f103rb]
+family = "stm32f1"
+flash = "128K"
+ram = "20K"
+sectors = "128x1K"
+boot = "32K"
+defaults = { SIGNATURES = false }
+[chip.stm32f103rc]
+family = "stm32f1"
+flash = "256K"
+ram = "48K"
+sectors = "128x2K"
+boot = "48K"
+[chip.stm32f103re]
+family = "stm32f1"
+flash = "512K"
+ram = "64K"
+sectors = "256x2K"
+boot = "64K"
+[chip.stm32f303re]
+family = "stm32f3"
+flash = "512K"
+ram = "64K"
+ram2 = "0x10000000:16K"
+sectors = "256x2K"
+boot = "64K"
+[chip.stm32f205rg]
+family = "stm32f2"
+flash = "1M"
+ram = "128K"
+sectors = "4x16K,1x64K,7x128K"
+boot = "48K"
+[chip.stm32f401cc]
+family = "stm32f4"
+flash = "256K"
+ram = "64K"
+sectors = "4x16K,1x64K,1x128K"
+boot = "32K"
+defaults = { SIGNATURES = false }
+[chip.stm32f401re]
+family = "stm32f4"
+flash = "512K"
+ram = "96K"
+sectors = "4x16K,1x64K,3x128K"
+boot = "48K"
+[chip.stm32f405rg]
+family = "stm32f4"
+flash = "1M"
+ram = "128K"
+ram2 = "0x10000000:64K"
+sectors = "4x16K,1x64K,7x128K"
+boot = "48K"
+[chip.stm32f407vg]
+family = "stm32f4"
+flash = "1M"
+ram = "128K"
+ram2 = "0x10000000:64K"
+sectors = "4x16K,1x64K,7x128K"
+boot = "48K"
+[chip.stm32f411ce]
+family = "stm32f4"
+flash = "512K"
+ram = "128K"
+sectors = "4x16K,1x64K,3x128K"
+boot = "48K"
+[chip.stm32f411re]
+family = "stm32f4"
+flash = "512K"
+ram = "128K"
+sectors = "4x16K,1x64K,3x128K"
+boot = "48K"
+[chip.stm32f446re]
+family = "stm32f4"
+flash = "512K"
+ram = "128K"
+sectors = "4x16K,1x64K,3x128K"
+boot = "48K"
+[chip.stm32f746zg]
+family = "stm32f7"
+flash = "1M"
+ram = "320K"
+sectors = "4x32K,1x128K,3x256K"
+boot = "64K"
+[chip.stm32l432kc]
+family = "stm32l4"
+flash = "256K"
+ram = "64K"
+sectors = "128x2K"
+boot = "48K"
+[chip.stm32l476rg]
+family = "stm32l4"
+flash = "1M"
+ram = "96K"
+ram2 = "0x10000000:32K"
+sectors = "512x2K"
+bank_pages = 256
+boot = "64K"
+[chip.stm32g031k8]
+family = "stm32g0"
+flash = "64K"
+ram = "8K"
+sectors = "32x2K"
+boot = "24K"
+defaults = { CONSOLE = false, RECV = false, CONTROL = false, SIGNATURES = false }
+[chip.stm32g071rb]
+family = "stm32g0"
+flash = "128K"
+ram = "36K"
+sectors = "64x2K"
+boot = "32K"
+defaults = { SIGNATURES = false }
+[chip.stm32g0b1re]
+family = "stm32g0"
+flash = "512K"
+ram = "144K"
+sectors = "256x2K"
+bank_pages = 128
+boot = "48K"
+[chip.stm32g431rb]
+family = "stm32g4"
+flash = "128K"
+ram = "32K"
+sectors = "64x2K"
+boot = "32K"
+defaults = { SIGNATURES = false }
+[chip.stm32g474re]
+family = "stm32g4"
+flash = "512K"
+ram = "128K"
+sectors = "256x2K"
+bank_pages = 128
+boot = "48K"
+
+# ---- STM32 boards ----------------------------------------------------------
+# uart: which USART is the console; tx/rx "A9" style; af: alternate function (not on F1)
+# led / button: "C13" style pins, *_active_high (default false = active low)
+[board.netduinoplus2]
+category = "QEMU test boards"
+title = "QEMU netduinoplus2 (STM32F405RG) - emulator test board"
+chip = "stm32f405rg"
+uart = "usart1"
+tx = "A9"
+rx = "A10"
+af = 7
+status = "emulator"
+[board.stm32vldiscovery]
+category = "Discovery kits"
+title = "STM32VLDISCOVERY / QEMU stm32vldiscovery (STM32F100RB)"
+chip = "stm32f100rb"
+uart = "usart1"
+tx = "A9"
+rx = "A10"
+led = "C9"
+led_active_high = true
+status = "emulator"
+[board.netduino2]
+category = "QEMU test boards"
+title = "QEMU netduino2 (STM32F205RG)"
+chip = "stm32f205rg"
+uart = "usart1"
+tx = "A9"
+rx = "A10"
+af = 7
+status = "built"
+[board.bluepill]
+category = "Blue Pill / Black Pill"
+title = "Blue Pill (STM32F103C8, USART1 on PA9/PA10)"
+chip = "stm32f103c8"
+uart = "usart1"
+tx = "A9"
+rx = "A10"
+led = "C13"
+status = "built"
+[board.bluepill-128k]
+category = "Blue Pill / Black Pill"
+title = "Blue Pill with 128 KB (STM32F103CB)"
+chip = "stm32f103cb"
+uart = "usart1"
+tx = "A9"
+rx = "A10"
+led = "C13"
+status = "built"
+[board.stm32f103rc-generic]
+category = "Custom boards (bare chip)"
+title = "STM32F103RC board (256 KB; console USART1 PA9/PA10)"
+chip = "stm32f103rc"
+uart = "usart1"
+tx = "A9"
+rx = "A10"
+status = "built"
+[board.stm32f103re-generic]
+category = "Custom boards (bare chip)"
+title = "STM32F103RE board (512 KB; console USART1 PA9/PA10)"
+chip = "stm32f103re"
+uart = "usart1"
+tx = "A9"
+rx = "A10"
+status = "built"
+[board.nucleo-f103rb]
+category = "Nucleo boards"
+title = "Nucleo-F103RB (ST-LINK VCP = USART2)"
+chip = "stm32f103rb"
+uart = "usart2"
+tx = "A2"
+rx = "A3"
+led = "A5"
+led_active_high = true
+button = "C13"
+status = "built"
+[board.nucleo-f030r8]
+category = "Nucleo boards"
+title = "Nucleo-F030R8 (Cortex-M0, no VTOR: apps keep RAM[0:0xC0] free)"
+chip = "stm32f030r8"
+uart = "usart2"
+tx = "A2"
+rx = "A3"
+af = 1
+led = "A5"
+led_active_high = true
+button = "C13"
+status = "built"
+[board.nucleo-f072rb]
+category = "Nucleo boards"
+title = "Nucleo-F072RB (Cortex-M0, no VTOR: apps keep RAM[0:0xC0] free)"
+chip = "stm32f072rb"
+uart = "usart2"
+tx = "A2"
+rx = "A3"
+af = 1
+led = "A5"
+led_active_high = true
+button = "C13"
+status = "built"
+[board.nucleo-f303re]
+category = "Nucleo boards"
+title = "Nucleo-F303RE"
+chip = "stm32f303re"
+uart = "usart2"
+tx = "A2"
+rx = "A3"
+af = 7
+led = "A5"
+led_active_high = true
+button = "C13"
+status = "built"
+[board.blackpill-f401cc]
+category = "Blue Pill / Black Pill"
+title = "WeAct Black Pill F401CC (USART1 on PA9/PA10)"
+chip = "stm32f401cc"
+uart = "usart1"
+tx = "A9"
+rx = "A10"
+af = 7
+led = "C13"
+button = "A0"
+status = "built"
+[board.blackpill-f411ce]
+category = "Blue Pill / Black Pill"
+title = "WeAct Black Pill F411CE (USART1 on PA9/PA10)"
+chip = "stm32f411ce"
+uart = "usart1"
+tx = "A9"
+rx = "A10"
+af = 7
+led = "C13"
+button = "A0"
+status = "built"
+[board.nucleo-f401re]
+category = "Nucleo boards"
+title = "Nucleo-F401RE"
+chip = "stm32f401re"
+uart = "usart2"
+tx = "A2"
+rx = "A3"
+af = 7
+led = "A5"
+led_active_high = true
+button = "C13"
+status = "built"
+[board.nucleo-f411re]
+category = "Nucleo boards"
+title = "Nucleo-F411RE"
+chip = "stm32f411re"
+uart = "usart2"
+tx = "A2"
+rx = "A3"
+af = 7
+led = "A5"
+led_active_high = true
+button = "C13"
+status = "built"
+[board.nucleo-f446re]
+category = "Nucleo boards"
+title = "Nucleo-F446RE"
+chip = "stm32f446re"
+uart = "usart2"
+tx = "A2"
+rx = "A3"
+af = 7
+led = "A5"
+led_active_high = true
+button = "C13"
+status = "built"
+[board.stm32f4-discovery]
+category = "Discovery kits"
+title = "STM32F4DISCOVERY (F407VG; console USART2 PA2/PA3 - wire a USB-UART)"
+chip = "stm32f407vg"
+uart = "usart2"
+tx = "A2"
+rx = "A3"
+af = 7
+led = "D12"
+led_active_high = true
+button = "A0"
+button_active_high = true
+status = "built"
+[board.nucleo-f746zg]
+category = "Nucleo boards"
+title = "Nucleo-F746ZG (ST-LINK VCP = USART3 PD8/PD9)"
+chip = "stm32f746zg"
+uart = "usart3"
+tx = "D8"
+rx = "D9"
+af = 7
+led = "B0"
+led_active_high = true
+button = "C13"
+button_active_high = true
+status = "built"
+[board.nucleo-l432kc]
+category = "Nucleo boards"
+title = "Nucleo-L432KC (VCP = USART2 PA2/PA15)"
+chip = "stm32l432kc"
+uart = "usart2"
+tx = "A2"
+rx = "A15"
+af = 7
+rx_af = 3
+led = "B3"
+led_active_high = true
+status = "built"
+[board.nucleo-l476rg]
+category = "Nucleo boards"
+title = "Nucleo-L476RG"
+chip = "stm32l476rg"
+uart = "usart2"
+tx = "A2"
+rx = "A3"
+af = 7
+led = "A5"
+led_active_high = true
+button = "C13"
+status = "built"
+[board.nucleo-g031k8]
+category = "Nucleo boards"
+title = "Nucleo-G031K8"
+chip = "stm32g031k8"
+uart = "usart2"
+tx = "A2"
+rx = "A3"
+af = 1
+led = "C6"
+led_active_high = true
+status = "built"
+[board.nucleo-g071rb]
+category = "Nucleo boards"
+title = "Nucleo-G071RB"
+chip = "stm32g071rb"
+uart = "usart2"
+tx = "A2"
+rx = "A3"
+af = 1
+led = "A5"
+led_active_high = true
+button = "C13"
+status = "built"
+[board.nucleo-g0b1re]
+category = "Nucleo boards"
+title = "Nucleo-G0B1RE"
+chip = "stm32g0b1re"
+uart = "usart2"
+tx = "A2"
+rx = "A3"
+af = 1
+led = "A5"
+led_active_high = true
+button = "C13"
+status = "built"
+[board.nucleo-g431rb]
+category = "Nucleo boards"
+title = "Nucleo-G431RB (VCP = LPUART1 PA2/PA3)"
+chip = "stm32g431rb"
+uart = "lpuart1"
+tx = "A2"
+rx = "A3"
+af = 12
+led = "A5"
+led_active_high = true
+button = "C13"
+status = "built"
+[board.nucleo-g474re]
+category = "Nucleo boards"
+title = "Nucleo-G474RE (VCP = LPUART1 PA2/PA3)"
+chip = "stm32g474re"
+uart = "lpuart1"
+tx = "A2"
+rx = "A3"
+af = 12
+led = "A5"
+led_active_high = true
+button = "C13"
+status = "built"
+
+# ===========================================================================
+# Nordic nRF51 / nRF52 (bare-metal full core: port/cortexm + port/nrf)
+#
+# MimiBoot sits at 0x0 where Nordic's MBR (and a SoftDevice) would be: firmware
+# built for the SoftDevice (nRF5 SDK, the Adafruit/Seeed Arduino nRF52 cores)
+# won't run. Zephyr (its own BLE controller), nrfx and FreeRTOS firmware will.
+# sectors: 4 KB as the layout sees them (nRF51 pages are 1 KB; the driver walks them)
+# pins: "P0.06" style; led / button *_active_high (default false = active low)
+# ===========================================================================
+[family.nrf52]
+maker = "nordic"
+core = "night"
+build = "mcu"
+vendor = "nrf"
+cpu = "cortex-m4"
+series = 52
+flash_base = 0x00000000
+clock_hz = 64000000
+time = "timer"
+page = 4096
+approtect_sw = true
+nvic_words = 2
+vtor_align = 256
+
+[family.nrf51]
+maker = "nordic"
+core = "night"
+build = "mcu"
+vendor = "nrf"
+cpu = "cortex-m0"
+series = 51
+flash_base = 0x00000000
+clock_hz = 16000000
+time = "timer"
+page = 1024
+vectors = "relay"
+irqs = 32
+nvic_words = 1
+vtor_align = 4
+
+[chip.nrf52832]
+family = "nrf52"
+flash = "512K"
+ram = "64K"
+sectors = "128x4K"
+boot = "48K"
+[chip.nrf52833]
+family = "nrf52"
+flash = "512K"
+ram = "128K"
+sectors = "128x4K"
+boot = "48K"
+[chip.nrf52840]
+family = "nrf52"
+flash = "1M"
+ram = "256K"
+sectors = "256x4K"
+boot = "48K"
+[chip.nrf52810]
+family = "nrf52"
+flash = "192K"
+ram = "24K"
+sectors = "48x4K"
+boot = "32K"
+nrf_uart = "uarte"
+defaults = { SIGNATURES = false }
+[chip.nrf52811]
+family = "nrf52"
+flash = "192K"
+ram = "24K"
+sectors = "48x4K"
+boot = "32K"
+nrf_uart = "uarte"
+defaults = { SIGNATURES = false }
+[chip.nrf52820]
+family = "nrf52"
+flash = "256K"
+ram = "32K"
+sectors = "64x4K"
+boot = "48K"
+nrf_uart = "uarte"
+[chip.nrf51822]
+family = "nrf51"
+flash = "256K"
+ram = "16K"
+sectors = "64x4K"
+boot = "48K"
+
+[board.nrf52840dk]
+category = "Nordic development kits"
+title = "Nordic nRF52840 DK (console = J-Link VCOM, P0.06/P0.08)"
+chip = "nrf52840"
+tx = "P0.06"
+rx = "P0.08"
+led = "P0.13"
+button = "P0.11"
+status = "built"
+[board.nrf52dk]
+category = "Nordic development kits"
+title = "Nordic nRF52 DK (nRF52832; console = J-Link VCOM, P0.06/P0.08)"
+chip = "nrf52832"
+tx = "P0.06"
+rx = "P0.08"
+led = "P0.17"
+button = "P0.13"
+status = "built"
+[board.nrf52833dk]
+category = "Nordic development kits"
+title = "Nordic nRF52833 DK (console = J-Link VCOM, P0.06/P0.08)"
+chip = "nrf52833"
+tx = "P0.06"
+rx = "P0.08"
+led = "P0.13"
+button = "P0.11"
+status = "built"
+[board.feather-nrf52840]
+category = "Maker boards (Adafruit, Seeed, Arduino)"
+title = "Adafruit Feather nRF52840 (native USB only: USB-UART on TX P0.25 / RX P0.24)"
+chip = "nrf52840"
+tx = "P0.25"
+rx = "P0.24"
+led = "P1.15"
+led_active_high = true
+button = "P1.02"
+status = "built"
+[board.xiao-nrf52840]
+category = "Maker boards (Adafruit, Seeed, Arduino)"
+title = "Seeed XIAO nRF52840 (native USB only: USB-UART on TX P1.11 / RX P1.12)"
+chip = "nrf52840"
+tx = "P1.11"
+rx = "P1.12"
+led = "P0.26"
+status = "built"
+[board.nano33ble]
+category = "Maker boards (Adafruit, Seeed, Arduino)"
+title = "Arduino Nano 33 BLE (native USB only: USB-UART on TX P1.03 / RX P1.10)"
+chip = "nrf52840"
+tx = "P1.03"
+rx = "P1.10"
+led = "P0.24"
+status = "built"
+[board.microbit-v2]
+category = "BBC micro:bit"
+title = "BBC micro:bit v2 (nRF52833; console = interface chip VCOM, P0.06/P1.08; button A)"
+chip = "nrf52833"
+tx = "P0.06"
+rx = "P1.08"
+button = "P0.14"
+status = "built"
+[board.nrf52dk-nrf52810]
+category = "Nordic development kits"
+title = "nRF52 DK built for nRF52810 (Zephyr's nrf52dk/nrf52810; UARTE console P0.06/P0.08)"
+chip = "nrf52810"
+tx = "P0.06"
+rx = "P0.08"
+led = "P0.17"
+button = "P0.13"
+status = "built"
+[board.nrf52840dk-nrf52811]
+category = "Nordic development kits"
+title = "nRF52840 DK built for nRF52811 (Zephyr's nrf52840dk/nrf52811; UARTE console P0.06/P0.08)"
+chip = "nrf52811"
+tx = "P0.06"
+rx = "P0.08"
+led = "P0.13"
+button = "P0.11"
+status = "built"
+[board.nrf52833dk-nrf52820]
+category = "Nordic development kits"
+title = "nRF52833 DK built for nRF52820 (Zephyr's nrf52833dk/nrf52820; UARTE console P0.06/P0.08)"
+chip = "nrf52820"
+tx = "P0.06"
+rx = "P0.08"
+led = "P0.13"
+button = "P0.11"
+status = "built"
+[board.microbit]
+category = "BBC micro:bit"
+title = "BBC micro:bit v1 / QEMU microbit (nRF51822; no VTOR: vector relay, apps keep RAM[0:8] free)"
+chip = "nrf51822"
+tx = "P0.24"
+rx = "P0.25"
+button = "P0.17"
+status = "emulator"
+
+# ===========================================================================
+# Microchip SAM D21 / D51 (bare-metal full core: port/cortexm + port/samd)
+#
+# MimiBoot sits at 0x0 where the UF2 / SAM-BA bootloader is: flash it with an
+# SWD probe, after clearing the BOOTPROT fuse (OpenOCD: at91samd bootloader 0).
+# Console: a SERCOM as UART. sercom = n, tx/rx "PB22" style, mux = the PORT
+# function letter, rxpo / txpo as in the SERCOM's CTRLA (copied from Zephyr's
+# board files; the D21 and D51 encodings differ).
+# sectors: 4 KB (D21, 256-byte rows inside) / 8 KB (D51 erase blocks)
+# ===========================================================================
+[family.samd21]
+maker = "microchip"
+core = "night"
+build = "mcu"
+vendor = "samd"
+cpu = "cortex-m0plus"
+series = 21
+flash_base = 0x00000000
+clock_hz = 8000000
+erase_unit = 256
+nvic_words = 1
+vtor_align = 256
+sercoms = [
+  { base = 0x42000800, gclk = 0x14, apb_off = 0x20, apb_bit = 2 },
+  { base = 0x42000C00, gclk = 0x15, apb_off = 0x20, apb_bit = 3 },
+  { base = 0x42001000, gclk = 0x16, apb_off = 0x20, apb_bit = 4 },
+  { base = 0x42001400, gclk = 0x17, apb_off = 0x20, apb_bit = 5 },
+  { base = 0x42001800, gclk = 0x18, apb_off = 0x20, apb_bit = 6 },
+  { base = 0x42001C00, gclk = 0x19, apb_off = 0x20, apb_bit = 7 },
+]
+
+[family.samd51]
+maker = "microchip"
+core = "night"
+build = "mcu"
+vendor = "samd"
+cpu = "cortex-m4"
+series = 51
+flash_base = 0x00000000
+clock_hz = 48000000
+erase_unit = 8192
+nvic_words = 5
+vtor_align = 1024
+mcuboot_hdr = 0x400
+sercoms = [
+  { base = 0x40003000, gclk = 7, apb_off = 0x14, apb_bit = 12 },
+  { base = 0x40003400, gclk = 8, apb_off = 0x14, apb_bit = 13 },
+  { base = 0x41012000, gclk = 23, apb_off = 0x18, apb_bit = 9 },
+  { base = 0x41014000, gclk = 24, apb_off = 0x18, apb_bit = 10 },
+  { base = 0x43000000, gclk = 34, apb_off = 0x20, apb_bit = 0 },
+  { base = 0x43000400, gclk = 35, apb_off = 0x20, apb_bit = 1 },
+  { base = 0x43000800, gclk = 36, apb_off = 0x20, apb_bit = 2 },
+  { base = 0x43000C00, gclk = 37, apb_off = 0x20, apb_bit = 3 },
+]
+
+[chip.samd21g18a]
+family = "samd21"
+flash = "256K"
+ram = "32K"
+sectors = "64x4K"
+boot = "48K"
+[chip.samd21e18a]
+family = "samd21"
+flash = "256K"
+ram = "32K"
+sectors = "64x4K"
+boot = "48K"
+[chip.samd51j19a]
+family = "samd51"
+flash = "512K"
+ram = "192K"
+sectors = "64x8K"
+boot = "48K"
+[chip.samd51j20a]
+family = "samd51"
+flash = "1M"
+ram = "256K"
+sectors = "128x8K"
+boot = "48K"
+[chip.samd51p19a]
+family = "samd51"
+flash = "512K"
+ram = "192K"
+sectors = "64x8K"
+boot = "48K"
+
+[board.arduino-zero]
+category = "SAM D21 (Cortex-M0+)"
+title = "Arduino Zero (console = EDBG virtual COM, SERCOM5 PB22/PB23)"
+chip = "samd21g18a"
+sercom = 5
+tx = "PB22"
+rx = "PB23"
+mux = "D"
+rxpo = 3
+txpo = 1
+led = "PA17"
+led_active_high = true
+status = "built"
+[board.mkrzero]
+category = "SAM D21 (Cortex-M0+)"
+title = "Arduino MKR Zero / MKR boards (Serial1 = SERCOM5 PB22/PB23: wire a USB-UART)"
+chip = "samd21g18a"
+sercom = 5
+tx = "PB22"
+rx = "PB23"
+mux = "D"
+rxpo = 3
+txpo = 1
+led = "PB08"
+led_active_high = true
+status = "built"
+[board.feather-m0]
+category = "SAM D21 (Cortex-M0+)"
+title = "Adafruit Feather M0 (Serial1 = SERCOM0 PA10/PA11: wire a USB-UART)"
+chip = "samd21g18a"
+sercom = 0
+tx = "PA10"
+rx = "PA11"
+mux = "C"
+rxpo = 3
+txpo = 1
+led = "PA17"
+led_active_high = true
+status = "built"
+[board.trinket-m0]
+category = "SAM D21 (Cortex-M0+)"
+title = "Adafruit Trinket M0 (SAMD21E18; UART = SERCOM0 PA06/PA07: wire a USB-UART)"
+chip = "samd21e18a"
+sercom = 0
+tx = "PA06"
+rx = "PA07"
+mux = "D"
+rxpo = 3
+txpo = 1
+led = "PA10"
+led_active_high = true
+status = "built"
+[board.xiao-samd21]
+category = "SAM D21 (Cortex-M0+)"
+title = "Seeed XIAO SAMD21 (UART = SERCOM4 PB08/PB09: wire a USB-UART)"
+chip = "samd21g18a"
+sercom = 4
+tx = "PB08"
+rx = "PB09"
+mux = "D"
+rxpo = 1
+txpo = 0
+led = "PA17"
+status = "built"
+[board.feather-m4]
+category = "SAM D51 (Cortex-M4F)"
+title = "Adafruit Feather M4 Express (SAMD51J19; Serial1 = SERCOM5 PB16/PB17: wire a USB-UART)"
+chip = "samd51j19a"
+sercom = 5
+tx = "PB16"
+rx = "PB17"
+mux = "C"
+rxpo = 1
+txpo = 0
+led = "PA23"
+led_active_high = true
+status = "built"
+[board.samd51j20a]
+category = "SAM D51 (Cortex-M4F)"
+title = "SAM D51J20A board with the Feather M4 console pins (SERCOM5 PB16/PB17)"
+chip = "samd51j20a"
+sercom = 5
+tx = "PB16"
+rx = "PB17"
+mux = "C"
+rxpo = 1
+txpo = 0
+status = "built"
+[board.wio-terminal]
+category = "SAM D51 (Cortex-M4F)"
+title = "Seeed Wio Terminal (SAMD51P19; Pi-header UART = SERCOM2 PB26/PB27)"
+chip = "samd51p19a"
+sercom = 2
+tx = "PB26"
+rx = "PB27"
+mux = "C"
+rxpo = 1
+txpo = 0
+led = "PA15"
+led_active_high = true
+button = "PC26"
+status = "built"
+
+# ===========================================================================
+# Raspberry Pi RP2040 / RP2350 (the full core on the Pico SDK)
+# ===========================================================================
+[chip.rp2040]
+maker = "rpi"
+core = "night"
+build = "pico"
+platform = "rp2040"
+flash = "2M"
+ram = "264K"
+locked = { RAM_IMAGES = true }      # the RP2040 port can only start RAM images
+[chip.rp2350-arm]
+maker = "rpi"
+core = "night"
+build = "pico"
+platform = "rp2350-arm-s"
+flash = "4M"
+ram = "520K"
+[chip.rp2350-riscv]
+maker = "rpi"
+core = "night"
+build = "pico"
+platform = "rp2350-riscv"
+flash = "4M"
+ram = "520K"
+
+[board.pico]
+category = "Pico boards"
+title = "Raspberry Pi Pico (RP2040; RAM-loaded images only)"
+chip = "rp2040"
+pico_board = "pico"
+status = "hardware"
+[board.pico2]
+category = "Pico boards"
+title = "Raspberry Pi Pico 2 (RP2350, Arm)"
+chip = "rp2350-arm"
+pico_board = "pico2"
+status = "built"
+[board.pico2-riscv]
+category = "Pico boards"
+title = "Raspberry Pi Pico 2 (RP2350, Hazard3 RISC-V)"
+chip = "rp2350-riscv"
+pico_board = "pico2"
+status = "built"
+[board.rp2350-lcd]
+category = "Other RP2350 boards"
+title = "Waveshare RP2350-LCD-1.28 (16 MB, Arm)"
+chip = "rp2350-arm"
+pico_board = "pico2"
+flash = "16M"
+status = "hardware"
+
+# ===========================================================================
+# AVR (the Lite core: lite/avr/). Classic megaAVR with a UART bootloader section.
+# boot_sizes: the BOOTSZ fuse choices, smallest first (bytes)
+# ===========================================================================
+[family.megaavr]
+maker = "microchip"
+core = "lite"
+build = "avr"
+
+[chip.atmega328p]
+family = "megaavr"
+mcu = "atmega328p"
+flash = "32K"
+ram = "2K"
+eeprom = 1024
+page = 128
+signature = [0x1E, 0x95, 0x0F]
+boot_sizes = [512, 1024, 2048, 4096]
+uart = 0
+[chip.atmega168]
+family = "megaavr"
+mcu = "atmega168"
+flash = "16K"
+ram = "1K"
+eeprom = 512
+page = 128
+signature = [0x1E, 0x94, 0x06]
+boot_sizes = [256, 512, 1024, 2048]
+uart = 0
+[chip.atmega644p]
+family = "megaavr"
+mcu = "atmega644p"
+flash = "64K"
+ram = "4K"
+eeprom = 2048
+page = 256
+signature = [0x1E, 0x96, 0x0A]
+boot_sizes = [1024, 2048, 4096, 8192]
+uart = 0
+[chip.atmega1284p]
+family = "megaavr"
+mcu = "atmega1284p"
+flash = "128K"
+ram = "16K"
+eeprom = 4096
+page = 256
+signature = [0x1E, 0x97, 0x05]
+boot_sizes = [1024, 2048, 4096, 8192]
+uart = 0
+[chip.atmega2560]
+family = "megaavr"
+mcu = "atmega2560"
+flash = "256K"
+ram = "8K"
+eeprom = 4096
+page = 256
+signature = [0x1E, 0x98, 0x01]
+boot_sizes = [1024, 2048, 4096, 8192]
+uart = 0
+
+[board.uno]
+category = "AVR: Arduino and classic ATmega"
+title = "Arduino Uno / Nano / Pro Mini 5V (ATmega328P, 16 MHz)"
+chip = "atmega328p"
+f_cpu = 16000000
+baud = 115200
+led = "B5"
+status = "emulator"
+[board.pro-mini-3v3]
+category = "AVR: Arduino and classic ATmega"
+title = "Arduino Pro Mini 3.3V (ATmega328P, 8 MHz)"
+chip = "atmega328p"
+f_cpu = 8000000
+baud = 57600
+led = "B5"
+status = "built"
+[board.diecimila]
+category = "AVR: Arduino and classic ATmega"
+title = "Arduino Diecimila / Nano (ATmega168, 16 MHz)"
+chip = "atmega168"
+f_cpu = 16000000
+baud = 115200
+led = "B5"
+status = "built"
+[board.sanguino-644p]
+category = "AVR: Arduino and classic ATmega"
+title = "Sanguino / ATmega644P (16 MHz)"
+chip = "atmega644p"
+f_cpu = 16000000
+baud = 115200
+led = "B0"
+status = "built"
+[board.mighty-1284p]
+category = "AVR: Arduino and classic ATmega"
+title = "MightyCore ATmega1284P (16 MHz)"
+chip = "atmega1284p"
+f_cpu = 16000000
+baud = 115200
+led = "B0"
+status = "built"
+[board.mega2560]
+category = "AVR: Arduino and classic ATmega"
+title = "Arduino Mega 2560 (16 MHz; avrdude -c arduino, not the stk500v2 wiring bootloader)"
+chip = "atmega2560"
+f_cpu = 16000000
+baud = 115200
+led = "B7"
+status = "built"
+
+# ===========================================================================
+# Makers, as the board picker groups them (order = this order)
+# ===========================================================================
+[maker.st]
+title = "STMicroelectronics"
+categories = ["Nucleo boards", "Blue Pill / Black Pill", "Discovery kits", "Custom boards (bare chip)", "QEMU test boards"]
+about = "STM32 Cortex-M MCUs: F0/F1/F3 (Cortex-M0/M3/M4), F2/F4/F7 (M3/M4/M7), L4, G0, G4. Bare-metal full core, UART console, the chip's ROM loader as the fallback."
+[maker.nordic]
+title = "Nordic Semiconductor"
+categories = ["Nordic development kits", "Maker boards (Adafruit, Seeed, Arduino)", "BBC micro:bit"]
+about = "nRF52 (Cortex-M4F, Bluetooth LE) and nRF51 (Cortex-M0). Bare-metal full core, UART console. Replaces Nordic's MBR at 0x0: Zephyr / nrfx / FreeRTOS firmware, no SoftDevice."
+[maker.microchip]
+title = "Microchip / Atmel"
+categories = ["AVR: Arduino and classic ATmega", "SAM D21 (Cortex-M0+)", "SAM D51 (Cortex-M4F)"]
+about = "Classic AVR (Arduino Uno, Nano, Mega...) with the small Lite core, and SAM D21 / D51 (Arduino Zero, Adafruit M0/M4, Seeed XIAO) with the full core."
+[maker.rpi]
+title = "Raspberry Pi"
+categories = ["Pico boards", "Other RP2350 boards"]
+about = "RP2040 and RP2350 (Arm and RISC-V) with the original RP ports on the Pico SDK: USB console, UF2, fixed flash presets."

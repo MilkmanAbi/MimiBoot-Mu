@@ -1,0 +1,616 @@
+# MimiBoot-Mu feature tree (what `python mimiconf.py` shows)
+#
+# option fields
+#   id        name in .config (MU_<id>=...)            macro    C macro written to mimiboot_config.h
+#   kind      bool | int | choice | string             default  value when nothing else applies
+#   cores     which cores it exists for: night (32-bit: RP, STM32, nRF, SAMD) / lite (AVR)
+#   builds    optional: only for these build kinds (pico / mcu = bare-metal Cortex-M / avr)
+#   default_for  { "<build>" = value } overrides per build kind
+#   depends   what must hold for this one to be selectable: "ID" (on), "ID=value", "ID!=value"
+#             ("ID!=value" also holds when ID doesn't exist for the board)
+#   range     int bounds; choices: choice values (macro gets the index, *_<VALUE> macros too)
+#   menu      which menu it sits in
+#
+# Turning an option off removes its code: the C side has stubs, and the linker drops them.
+#
+# [[preset]]: a starting point (TUI "Presets", `mimiconf.py preset <id>`): every option back to
+# its default, then these values; options that don't exist for the board (or that the board
+# locks, see targets.toml `locked`) are skipped.
+
+[[menu]]
+id = "slots"
+title = "Slots and updates"
+help = "How many images the board holds and what happens when a new one arrives: A/B pairs, a golden recovery image, trial boots that must be confirmed, rollback, the crash-loop guard."
+[[menu]]
+id = "formats"
+title = "Image formats"
+help = "What a slot may contain: MimiBoot's own images, Zephyr / MCUboot images, plain firmware binaries, images that run from RAM."
+[[menu]]
+id = "security"
+title = "Checks and security"
+help = "What the bootloader checks before it starts an image: the payload hash (every boot, once, or never), Ed25519 signatures, the trusted keys."
+[[menu]]
+id = "console"
+title = "Console, menu and upload"
+help = "The text console on USB (RP) or a UART: boot menu, command line, diagnostic commands, image upload with mbtool, the boot config file."
+[[menu]]
+id = "os"
+title = "Handoff and OS hooks"
+help = "What the started image gets from the bootloader and how a running OS can talk back: the handoff block, reboot requests, wiping the bootloader's RAM before the handover."
+[[menu]]
+id = "hw"
+title = "Board hardware"
+help = "Console speed and whether the bootloader uses the board's LED and button."
+[[menu]]
+id = "layout"
+title = "Bootloader region"
+help = "How much flash the bootloader keeps for itself; the slots start after it. `Show the flash map` on the home screen shows the result."
+[[menu]]
+id = "lite"
+title = "AVR bootloader (Lite core)"
+help = "The small AVR core: STK500 uploads (Arduino IDE / avrdude), an app check, app requests, trial boots, a flash-write service, staged updates."
+[[menu]]
+id = "output"
+title = "Build output"
+help = "Where `Build` puts the results, and whether to also export a self-contained source tree you can build without mimiconf."
+
+# ---- slots and updates ----------------------------------------------------------
+[[option]]
+id = "LAYOUT"
+macro = ""
+kind = "choice"
+choices = ["single", "ab", "ab+golden"]
+default = "ab"
+default_for = { pico = "ab+golden" }
+cores = ["night"]
+builds = ["mcu"]
+menu = "slots"
+title = "Slots: single / A-B / A-B + golden"
+help = """single: one slot, no A/B at all. The smallest setup: a new image simply replaces the old one.
+ab: two slots; an update goes to the slot that isn't running, so a bad one can be rolled back.
+ab+golden: A/B plus a recovery image that is only ever replaced by a newer version.
+(RP boards use fixed presets with A/B + golden.)"""
+
+[[option]]
+id = "AUX_SLOTS"
+macro = ""
+kind = "int"
+default = 0
+range = [0, 3]
+cores = ["night"]
+builds = ["mcu"]
+depends = ["LAYOUT=ab+golden"]
+menu = "slots"
+title = "Extra (aux) slots"
+help = "More images to boot from menu/config entries: a test build, a second OS, a factory-test firmware."
+
+[[option]]
+id = "AB_TRIAL"
+macro = "MB_FEAT_AB_TRIAL"
+kind = "bool"
+default = true
+default_for = { mcu = false }
+cores = ["night"]
+depends = ["LAYOUT!=single"]
+menu = "slots"
+title = "Updates must confirm (trial boots + automatic rollback)"
+help = """A new A/B image gets a few boots to call mb_client_confirm(); if it doesn't, the bootloader goes back to the previous good image.
+Off: new images are trusted once their checks pass (right for stock Zephyr, FreeRTOS, Arduino firmware that knows nothing about MimiBoot).
+Off by default on bare-metal MCUs. The console's 'confirm' command confirms by hand."""
+
+[[option]]
+id = "TRIES"
+macro = "MB_DEFAULT_TRIES"
+kind = "int"
+default = 3
+range = [1, 20]
+cores = ["night"]
+depends = ["AB_TRIAL"]
+menu = "slots"
+title = "Trial boots before rollback"
+help = "How many times an unconfirmed update is started before it is marked bad."
+
+[[option]]
+id = "TRIAL_WATCHDOG"
+macro = "MB_FEAT_TRIAL_WATCHDOG"
+kind = "bool"
+default = true
+default_for = { mcu = false }
+cores = ["night"]
+depends = ["AB_TRIAL"]
+menu = "slots"
+title = "Watchdog during trial boots"
+help = """Arm the watchdog before starting a trial image, so a hang also counts as a failed try.
+STM32 and nRF: the watchdog can't be stopped once started, so the app must keep refreshing it forever. Off by default on bare-metal MCUs."""
+
+[[option]]
+id = "TRIAL_MS"
+macro = "MB_DEFAULT_TRIAL_MS"
+kind = "int"
+default = 15000
+range = [1000, 30000]
+cores = ["night"]
+depends = ["TRIAL_WATCHDOG"]
+menu = "slots"
+title = "Trial watchdog timeout (ms)"
+help = "Images can override it in their header (mbtool pack --trial-ms)."
+
+[[option]]
+id = "CRASH_GUARD"
+macro = "MB_FEAT_CRASH_GUARD"
+kind = "bool"
+default = true
+cores = ["night"]
+depends = ["LAYOUT!=single"]
+menu = "slots"
+title = "Crash-loop guard"
+help = "After several watchdog resets in a row of a confirmed image, boot the other good image (or golden) instead. Needs somewhere to fall back to, so not with a single slot."
+
+[[option]]
+id = "ANTI_ROLLBACK"
+macro = "MB_FEAT_ANTI_ROLLBACK"
+kind = "bool"
+default = true
+cores = ["night"]
+menu = "slots"
+title = "Anti-rollback (security version floor)"
+help = "Once an image with security version N is confirmed, A/B images below N are refused, so nobody can reinstall an old vulnerable build."
+
+# ---- image formats ---------------------------------------------------------
+[[option]]
+id = "IMG_NATIVE"
+macro = "MB_FEAT_IMG_NATIVE"
+kind = "bool"
+default = true
+cores = ["night"]
+menu = "formats"
+title = "MimiBoot images (mbtool pack)"
+help = "The MIMG header: name, version, SHA-256, optional Ed25519 signature, anti-rollback counter, handoff address. The full-featured format."
+
+[[option]]
+id = "IMG_MCUBOOT"
+macro = "MB_FEAT_IMG_MCUBOOT"
+kind = "bool"
+default = false
+cores = ["night"]
+builds = ["mcu", "pico"]
+menu = "formats"
+title = "Zephyr / MCUboot images (imgtool, west sign)"
+help = """Boot images in MCUboot format: what Zephyr builds with CONFIG_BOOTLOADER_MCUBOOT=y and signs with imgtool / west sign.
+The SHA-256 TLV is checked like any image hash; an ED25519 TLV is checked against the build's keys (sign with: imgtool keygen -t ed25519).
+mimiconf writes a devicetree overlay (zephyr-partitions.overlay) so the Zephyr app links at the right slot.
+Not supported: encrypted images, 'pure' signatures, MCUboot swap trailers (use the MimiBoot client to confirm, or turn off 'Updates must confirm')."""
+
+[[option]]
+id = "IMG_RAW"
+macro = "MB_FEAT_IMG_RAW"
+kind = "bool"
+default = false
+cores = ["night"]
+builds = ["mcu"]
+menu = "formats"
+title = "Raw firmware (FreeRTOS, bare metal, Arduino .bin)"
+help = """Boot a plain .bin whose vector table sits at the very start of a slot (link the firmware at the slot address).
+No metadata means no integrity check: the bootloader only sanity-checks the stack pointer and reset vector.
+Prefer wrapping it (mbtool pack, link at slot + 0x1000) when you can."""
+
+[[option]]
+id = "RAM_IMAGES"
+macro = "MB_FEAT_RAM_IMAGES"
+kind = "bool"
+default = true
+cores = ["night"]
+menu = "formats"
+title = "RAM images"
+help = "Images that are copied to RAM, checked there and started there, and the console's 'ramboot' (try an image without touching flash). The RP2040 port needs this (it can't remap XIP slots)."
+
+# ---- checks and security ------------------------------------------------------------------
+[[option]]
+id = "BOOT_VERIFY"
+macro = "MB_BOOT_VERIFY"
+kind = "choice"
+choices = ["every-boot", "once", "never"]
+default = "every-boot"
+cores = ["night"]
+menu = "security"
+title = "Check the image hash: every boot / once / never"
+help = """every-boot: SHA-256 of the whole payload before every start (catches flash corruption; roughly 10-100 ms per 100 KB at reset clocks).
+once: the first boot of a new image hashes it and records that in the boot log; later boots only check the header. Faster boots; corruption that happens later goes unnoticed.
+never: header checks only. Images uploaded through MimiBoot (mbtool, the client library) are still hashed before their header is written; images written with a debugger are never checked. Fastest; for when something else guarantees the flash.
+'Refuse unsigned images' needs every-boot."""
+
+[[option]]
+id = "SIGNATURES"
+macro = "MB_FEAT_SIGNATURES"
+kind = "bool"
+default = true
+cores = ["night"]
+menu = "security"
+title = "Ed25519 signatures"
+help = "Verify image signatures against the public keys compiled in (KEYS). About 6 KB of code; checks take ~100-500 ms on a Cortex-M at reset clocks."
+
+[[option]]
+id = "REQUIRE_SIGNATURE"
+macro = "MB_REQUIRE_SIGNATURE"
+kind = "bool"
+default = false
+cores = ["night"]
+depends = ["SIGNATURES"]
+menu = "security"
+title = "Refuse unsigned images (secure boot)"
+help = "Only images signed by one of KEYS boot. Needs KEYS, and the hash on every boot."
+
+[[option]]
+id = "KEYS"
+macro = ""
+kind = "string"
+default = ""
+cores = ["night"]
+depends = ["SIGNATURES"]
+menu = "security"
+title = "Trusted public keys file"
+help = "A text file with one Ed25519 public key per line (64 hex digits): mbtool keygen writes keys/mimiboot.pub. Enter a path; quotes are fine."
+
+# ---- console -----------------------------------------------------------------------
+[[option]]
+id = "CONSOLE"
+macro = "MB_FEAT_CONSOLE"
+kind = "bool"
+default = true
+cores = ["night"]
+menu = "console"
+title = "Console with boot menu"
+help = "USB (RP) or UART (STM32, nRF, SAMD) text console with the boot menu. Without it, a board with nothing bootable falls back to the chip's ROM loader (RP, STM32; nRF and SAMD have none and wait for a debugger)."
+
+[[option]]
+id = "SHELL"
+macro = "MB_FEAT_SHELL"
+kind = "bool"
+default = true
+cores = ["night"]
+depends = ["CONSOLE"]
+menu = "console"
+title = "Command line (ls, boot, confirm, recv, erase, cfg ...)"
+help = "The console's command line ('c' in the menu). Off: the menu alone (pick an entry, edit its args, reboot). Uploads need it."
+
+[[option]]
+id = "SHELL_DIAG"
+macro = "MB_FEAT_SHELL_DIAG"
+kind = "bool"
+default = true
+cores = ["night"]
+depends = ["SHELL"]
+menu = "console"
+title = "Diagnostic commands (md memory dump, sha, log, layout, keys)"
+help = "Handy on the bench. Turn off for products: 'md' reads any flash or RAM the bootloader can see."
+
+[[option]]
+id = "RECV"
+macro = "MB_FEAT_RECV"
+kind = "bool"
+default = true
+cores = ["night"]
+depends = ["SHELL"]
+menu = "console"
+title = "Image upload over the console (mbtool install / ota / ramboot)"
+help = "Receive images in CRC-checked frames and write them to a slot."
+
+[[option]]
+id = "CFG_FILE"
+macro = "MB_FEAT_CFG_FILE"
+kind = "bool"
+default = true
+default_for = { mcu = false }
+cores = ["night"]
+menu = "console"
+title = "Boot config file in flash (entries, args, default, timeout)"
+help = """A small GRUB-ish text config kept in two flash sectors (atomic updates). Without it the built-in entries apply: os (A/B), recovery (golden), one per aux slot.
+Off by default on bare-metal MCUs: on STM32F2/F4/F7 it costs two extra erase sectors (64-128 KB each); elsewhere 8-16 KB."""
+
+[[option]]
+id = "GRUB"
+macro = "MB_FEAT_GRUB"
+kind = "bool"
+default = true
+cores = ["night"]
+depends = ["CFG_FILE"]
+menu = "console"
+title = "GRUB-style menuentry syntax"
+
+[[option]]
+id = "MENU_SECS"
+macro = "MB_MENU_SECS"
+kind = "int"
+default = 10
+range = [1, 600]
+cores = ["night"]
+depends = ["CONSOLE"]
+menu = "console"
+title = "Boot menu countdown (s)"
+help = "How long the menu waits before booting the default entry, unless the config file says otherwise."
+
+[[option]]
+id = "BREAK_IN_MS"
+macro = "MB_BREAK_IN_MS"
+kind = "int"
+default = 300
+range = [0, 5000]
+cores = ["night"]
+builds = ["mcu"]
+depends = ["CONSOLE"]
+menu = "console"
+title = "UART break-in window after reset (ms)"
+help = "Any key on the console UART within this window opens the menu (like U-Boot's autoboot delay). 0: only the button / OS requests open it, and boots don't wait at all."
+
+# ---- handoff and OS hooks ---------------------------------------------------------------------
+[[option]]
+id = "HANDOFF"
+macro = "MB_FEAT_HANDOFF"
+kind = "bool"
+default = true
+cores = ["night"]
+menu = "os"
+title = "Boot handoff (slot, entry, args, reset cause -> the image's RAM)"
+help = "A checksummed block the image finds at the address its header names: which slot and entry it was started from, the args, why the chip reset."
+
+[[option]]
+id = "CONTROL"
+macro = "MB_FEAT_CONTROL"
+kind = "bool"
+default = true
+cores = ["night"]
+menu = "os"
+title = "OS control service (reboot into menu / entry / slot / flash mode)"
+help = "Lets a running OS queue a versioned request (mb_client_request) that the bootloader consumes on the next boot."
+
+[[option]]
+id = "SCRUB_RAM"
+macro = "MB_FEAT_SCRUB_RAM"
+kind = "bool"
+default = false
+cores = ["night"]
+builds = ["mcu"]
+menu = "os"
+title = "Wipe the bootloader's RAM before handing over"
+help = "On the way out the bootloader zeroes its own RAM region (its data, boot log copy, config text, stack) from registers only, then jumps: the image starts with nothing of the bootloader left in RAM. The handoff block lives in the image's RAM and survives. Costs a few microseconds."
+
+# ---- board hardware ----------------------------------------------------------------------------------
+[[option]]
+id = "BAUD"
+macro = "MB_UART_BAUD"
+kind = "int"
+default = 115200
+range = [9600, 1000000]
+cores = ["night", "lite"]
+builds = ["mcu", "avr"]
+menu = "hw"
+title = "Console / upload baud rate"
+
+[[option]]
+id = "BOARD_LED"
+macro = "MB_FEAT_LED"
+kind = "bool"
+default = true
+cores = ["night"]
+builds = ["mcu"]
+menu = "hw"
+title = "Use the board LED (lit while the bootloader waits for a key)"
+help = "Off: the bootloader never touches the LED pin."
+
+[[option]]
+id = "BOARD_BUTTON"
+macro = "MB_FEAT_BUTTON"
+kind = "bool"
+default = true
+cores = ["night"]
+builds = ["mcu"]
+menu = "hw"
+title = "Board button opens the menu"
+help = "Off: the bootloader never reads the button pin (the UART break-in and OS requests still work)."
+
+# ---- flash layout (bare-metal MCUs; RP layouts are fixed presets per flash size) ----------------
+[[option]]
+id = "BOOT_SIZE"
+macro = ""
+kind = "string"
+default = "chip"
+cores = ["night"]
+builds = ["mcu"]
+menu = "layout"
+title = "Bootloader region size (chip / auto / e.g. 32K)"
+help = """chip: the chip's default from targets.toml (stable slot addresses across rebuilds).
+auto: the smallest sector-aligned region the build fits in (slot addresses change when features change, so apps must be relinked).
+32K / 48K ...: a fixed size."""
+
+# ---- AVR (Lite core) ---------------------------------------------------------------------------------
+[[option]]
+id = "STK500"
+macro = "MU_FEAT_STK500"
+kind = "bool"
+default = true
+cores = ["lite"]
+menu = "lite"
+title = "Serial upload (STK500v1: avrdude -c arduino, Arduino IDE)"
+help = "Speaks the protocol of Arduino's own bootloader, so the IDE / avrdude upload unchanged."
+
+[[option]]
+id = "EEPROM_RW"
+macro = "MU_FEAT_EEPROM"
+kind = "bool"
+default = true
+cores = ["lite"]
+depends = ["STK500"]
+menu = "lite"
+title = "EEPROM read/write over STK500 (avrdude -U eeprom:...)"
+
+[[option]]
+id = "ENTRY"
+macro = "MU_ENTRY"
+kind = "choice"
+choices = ["reset-pin", "every-reset"]
+default = "reset-pin"
+cores = ["lite"]
+depends = ["STK500"]
+menu = "lite"
+title = "When to listen for an upload"
+help = """reset-pin: only after an external reset (reset button, or the IDE pulsing DTR). Power-on and watchdog resets start the app at once.
+every-reset: every reset waits the timeout first."""
+
+[[option]]
+id = "TIMEOUT_MS"
+macro = "MU_TIMEOUT_MS"
+kind = "choice"
+choices = ["250", "500", "1000", "2000", "4000", "8000"]
+default = "1000"
+cores = ["lite"]
+depends = ["STK500"]
+menu = "lite"
+title = "Upload wait (ms, a watchdog period)"
+
+[[option]]
+id = "VERIFY"
+macro = "MU_VERIFY"
+kind = "choice"
+choices = ["none", "crc32"]
+default = "crc32"
+cores = ["lite"]
+menu = "lite"
+title = "Check the app before starting it"
+help = """crc32: at the end of every upload the bootloader records the app's length and CRC-32 (top of EEPROM) and checks them on every boot; a damaged app is not started (the loader waits for an upload instead).
+Apps flashed some other way (ISP) have no record and start as before.
+none: no check, smallest build."""
+
+[[option]]
+id = "NOAPP_STAY"
+macro = "MU_FEAT_NOAPP_STAY"
+kind = "bool"
+default = true
+cores = ["lite"]
+depends = ["STK500"]
+menu = "lite"
+title = "No (valid) app: stay in the bootloader"
+
+[[option]]
+id = "APP_REQUEST"
+macro = "MU_FEAT_APP_REQUEST"
+kind = "bool"
+default = true
+cores = ["lite"]
+depends = ["STK500"]
+menu = "lite"
+title = "Apps can reboot into the bootloader (mu_enter_bootloader())"
+
+[[option]]
+id = "LITE_HANDOFF"
+macro = "MU_FEAT_HANDOFF"
+kind = "bool"
+default = true
+cores = ["lite"]
+menu = "lite"
+title = "Boot handoff (reset cause in r2 + GPIOR0-2)"
+help = "MCUSR in r2 (Optiboot convention) and MimiBoot flags in GPIOR0..2; read with mu_handoff()."
+
+[[option]]
+id = "LITE_TRIAL"
+macro = "MU_FEAT_TRIAL"
+kind = "bool"
+default = false
+cores = ["lite"]
+depends = ["VERIFY=crc32"]
+menu = "lite"
+title = "Trial boots: a new upload must call mu_confirm()"
+help = """After an upload the app runs under the watchdog; if it resets MU_TRIAL_TRIES times without calling mu_confirm(), the bootloader stops starting it and waits for a new upload.
+Off by default: ordinary sketches never confirm."""
+
+[[option]]
+id = "LITE_TRIES"
+macro = "MU_TRIAL_TRIES"
+kind = "int"
+default = 3
+range = [1, 15]
+cores = ["lite"]
+depends = ["LITE_TRIAL"]
+menu = "lite"
+title = "Trial boots before giving up"
+
+[[option]]
+id = "SPM_API"
+macro = "MU_FEAT_SPM_API"
+kind = "bool"
+default = false
+cores = ["lite"]
+menu = "lite"
+title = "Flash-write service for apps (mu_spm(): OTA, data in flash)"
+help = "A fixed jump table at the end of flash: apps call the bootloader's SPM routine to erase/write their own flash pages (AVR only allows SPM from the boot section)."
+
+[[option]]
+id = "STAGED_UPDATE"
+macro = "MU_FEAT_STAGED"
+kind = "bool"
+default = false
+cores = ["lite"]
+depends = ["SPM_API", "VERIFY=crc32"]
+menu = "lite"
+title = "Staged updates (app writes a new image to upper flash, bootloader installs it)"
+help = """The running app stores a new image in the top half of the app area (mu_spm), then calls mu_stage_commit(len, crc32) and reboots.
+The bootloader checks the CRC, copies it over the app (resumes after a power cut) and records it."""
+
+[[option]]
+id = "LED"
+macro = "MU_FEAT_LED"
+kind = "bool"
+default = true
+cores = ["lite"]
+menu = "lite"
+title = "Blink the board LED while the bootloader listens"
+
+# ---- build output ------------------------------------------------------------------------------------
+[[option]]
+id = "OUTPUT_DIR"
+macro = ""
+kind = "string"
+default = "~/MimiBoot"
+cores = ["night", "lite"]
+menu = "output"
+title = "Output folder (each board gets a subfolder)"
+help = """Where builds go: <folder>/<board>/. The default is MimiBoot in your home folder.
+Type any path, with or without quotes ("D:/firmware/boot" or ~/projects/boot). `mimiconf.py build -o DIR` overrides it for one build."""
+
+[[option]]
+id = "EXPORT_SOURCE"
+macro = ""
+kind = "bool"
+default = false
+cores = ["night", "lite"]
+menu = "output"
+title = "Also export the configured source tree (with a Makefile)"
+help = "Copies exactly the sources this configuration compiles, the generated config header and linker script, and a Makefile into <output>/source/, so the bootloader can be rebuilt (or audited) without mimiconf. RP boards get the CMake project and the build command instead."
+
+# ---- presets ------------------------------------------------------------------------------------------
+[[preset]]
+id = "minimal"
+title = "Minimal: just boot the app"
+help = "The smallest bootloader that still checks what it starts. No console, no uploads, one slot, no OS hooks. Flash it, link your firmware for the slot, done."
+cores = ["night", "lite"]
+values = { LAYOUT = "single", CONSOLE = false, SHELL = false, SHELL_DIAG = false, RECV = false, CFG_FILE = false, CONTROL = false, HANDOFF = false, SIGNATURES = false, ANTI_ROLLBACK = false, RAM_IMAGES = false, CRASH_GUARD = false, AB_TRIAL = false, BOOT_VERIFY = "once", BOARD_LED = false, BOARD_BUTTON = false, VERIFY = "none", EEPROM_RW = false, APP_REQUEST = false, LITE_HANDOFF = false, LED = false }
+
+[[preset]]
+id = "hobby"
+title = "Hobby: console, uploads, no ceremony"
+help = "Everything handy on the bench: boot menu, command line with diagnostics, uploads over the console, A/B slots without trials (new images just boot), Zephyr and raw firmware accepted. No signatures."
+cores = ["night", "lite"]
+values = { LAYOUT = "ab", AB_TRIAL = false, SIGNATURES = false, IMG_MCUBOOT = true, IMG_RAW = true, CONSOLE = true, SHELL = true, SHELL_DIAG = true, RECV = true, BOOT_VERIFY = "every-boot" }
+
+[[preset]]
+id = "product"
+title = "Product: safe field updates"
+help = "A/B + golden recovery, updates must confirm or roll back, watchdog on trial boots, crash-loop guard, anti-rollback, OS hooks. Signatures are checked when present. Diagnostics off."
+cores = ["night", "lite"]
+values = { LAYOUT = "ab+golden", AB_TRIAL = true, TRIAL_WATCHDOG = true, CRASH_GUARD = true, ANTI_ROLLBACK = true, HANDOFF = true, CONTROL = true, SIGNATURES = true, SHELL_DIAG = false, BOOT_VERIFY = "every-boot", LITE_TRIAL = true, VERIFY = "crc32" }
+
+[[preset]]
+id = "secure"
+title = "Secure boot: signed images only"
+help = "Only images signed with your keys start (set KEYS: mbtool keygen). Hash on every boot, anti-rollback, no raw/RAM images, no diagnostics, the bootloader's RAM is wiped before the handover."
+cores = ["night"]
+values = { SIGNATURES = true, REQUIRE_SIGNATURE = true, BOOT_VERIFY = "every-boot", ANTI_ROLLBACK = true, IMG_RAW = false, RAM_IMAGES = false, SHELL_DIAG = false, SCRUB_RAM = true, LAYOUT = "ab+golden", AB_TRIAL = true, CRASH_GUARD = true }

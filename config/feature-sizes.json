@@ -1,0 +1,146 @@
+{
+ "mcu": {
+  "board": "nucleo-f411re",
+  "base": 34060,
+  "options": {
+   "AB_TRIAL": {
+    "value": true,
+    "delta": 16
+   },
+   "CRASH_GUARD": {
+    "value": false,
+    "delta": -112
+   },
+   "ANTI_ROLLBACK": {
+    "value": false,
+    "delta": -32
+   },
+   "IMG_MCUBOOT": {
+    "value": true,
+    "delta": 792
+   },
+   "IMG_RAW": {
+    "value": true,
+    "delta": 356
+   },
+   "RAM_IMAGES": {
+    "value": false,
+    "delta": -432
+   },
+   "BOOT_VERIFY=once": {
+    "value": "once",
+    "delta": 48
+   },
+   "BOOT_VERIFY=never": {
+    "value": "never",
+    "delta": 0
+   },
+   "SIGNATURES": {
+    "value": false,
+    "delta": -5568
+   },
+   "CONSOLE": {
+    "value": false,
+    "delta": -14832
+   },
+   "SHELL": {
+    "value": false,
+    "delta": -12004
+   },
+   "SHELL_DIAG": {
+    "value": false,
+    "delta": -2172
+   },
+   "RECV": {
+    "value": false,
+    "delta": -1248
+   },
+   "HANDOFF": {
+    "value": false,
+    "delta": -368
+   },
+   "CONTROL": {
+    "value": false,
+    "delta": -608
+   },
+   "SCRUB_RAM": {
+    "value": true,
+    "delta": 32
+   },
+   "BOARD_LED": {
+    "value": false,
+    "delta": -64
+   },
+   "BOARD_BUTTON": {
+    "value": false,
+    "delta": -112
+   }
+  }
+ },
+ "avr": {
+  "board": "uno",
+  "base": 1604,
+  "options": {
+   "STK500": {
+    "value": false,
+    "delta": -1012
+   },
+   "EEPROM_RW": {
+    "value": false,
+    "delta": -60
+   },
+   "ENTRY=every-reset": {
+    "value": "every-reset",
+    "delta": 6
+   },
+   "TIMEOUT_MS=250": {
+    "value": "250",
+    "delta": -2
+   },
+   "TIMEOUT_MS=500": {
+    "value": "500",
+    "delta": -2
+   },
+   "TIMEOUT_MS=2000": {
+    "value": "2000",
+    "delta": 0
+   },
+   "TIMEOUT_MS=4000": {
+    "value": "4000",
+    "delta": 0
+   },
+   "TIMEOUT_MS=8000": {
+    "value": "8000",
+    "delta": 0
+   },
+   "VERIFY=none": {
+    "value": "none",
+    "delta": -466
+   },
+   "NOAPP_STAY": {
+    "value": false,
+    "delta": 72
+   },
+   "APP_REQUEST": {
+    "value": false,
+    "delta": -20
+   },
+   "LITE_HANDOFF": {
+    "value": false,
+    "delta": -14
+   },
+   "LITE_TRIAL": {
+    "value": true,
+    "delta": 78
+   },
+   "SPM_API": {
+    "value": true,
+    "delta": 96
+   },
+   "LED": {
+    "value": false,
+    "delta": -18
+   }
+  }
+ }
+}
