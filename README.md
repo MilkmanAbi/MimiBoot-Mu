@@ -2,6 +2,10 @@
 
 > TUI is damn ugly rn, Imma try to fix it soon? Idk, I can't make good UI. Sowwy OwO
 
+> This proj goes all the way back to like Dec 2025 or smth iirc, kinda lost the git
+>  history because I deleted the repo during a iffy moment of bad decisions
+> Some stuff was like poorly reimplemented and all. tryna recreate it.
+
 MimiBoot-Mu is a bootloader for microcontrollers, from small to big bois: RP2040 and RP2350, STM32,
 Nordic nRF51/nRF52, Microchip SAM D21/D51, and classic AVRs like the ATmega328P on
 an Arduino Uno.
