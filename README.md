@@ -156,7 +156,7 @@ docs/               test status, security, OS integration, options, Zephyr / Fre
 ## History
 
 > This proj goes all the way back to like Dec 2025 or smth iirc, kinda lost the git
->  history because I deleted the repo during a iffy moment of bad decisions
+>  history because I deleted the repo during a iffy moment of bad mental health
 > Some stuff was like poorly reimplemented and all. tryna recreate it.
 
 ## License
