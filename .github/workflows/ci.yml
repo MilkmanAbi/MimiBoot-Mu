@@ -1,0 +1,111 @@
+# Every test that runs without hardware, on every push and pull request.
+name: tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  ARM_TC: arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi
+  ARM_TC_URL: https://developer.arm.com/-/media/Files/downloads/gnu/15.2.rel1/binrel/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi.tar.xz
+  # published by Arm next to the download (.sha256asc)
+  ARM_TC_SHA256: 597893282ac8c6ab1a4073977f2362990184599643b4c5ee34870a8215783a16
+
+jobs:
+  host:
+    name: core logic (host)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: core tests (simulated flash, power cuts, crypto vectors, console lock)
+        run: python tests/run.py
+      - name: feature profiles (the core with options switched off)
+        run: python tests/test_profiles.py
+      - name: SAM D flash driver against a register model
+        run: python tests/test_sim_flash.py
+      - name: host tools
+        run: python tests/test_tools.py
+
+  fuzz:
+    name: fuzzing the input parsers (libFuzzer, ASan, UBSan)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: clang 18 with libFuzzer and the sanitizer runtimes
+        run: sudo apt-get update && sudo apt-get install -y clang-18 libclang-rt-18-dev
+      - name: "SMP, console uploads, boot config, flash contents: 60 s each"
+        env:
+          FUZZ_CC: clang-18
+        run: python tests/fuzz/run_fuzz.py 60
+      - name: keep what crashed
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fuzz-crashes
+          path: tests/fuzz/crashes/
+
+  build:
+    name: configurator + every board compiles
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Arm GNU Toolchain (same release as development)
+        run: |
+          curl -fsSL "$ARM_TC_URL" -o tc.tar.xz
+          echo "$ARM_TC_SHA256  tc.tar.xz" | sha256sum -c -
+          mkdir -p "$HOME/arm" && tar -xJf tc.tar.xz -C "$HOME/arm"
+          echo "$HOME/arm/$ARM_TC/bin" >> "$GITHUB_PATH"
+      - name: avr-gcc
+        run: sudo apt-get update && sudo apt-get install -y gcc-avr avr-libc
+      - name: configurator checks, then build every board (Pico SDK boards excepted)
+        run: python tests/test_muconfigurator.py --build-all
+      - name: the same boards with two stages and with SMP (where they fit)
+        run: python tests/test_muconfigurator.py --build-variants
+
+  qemu:
+    name: STM32 + nRF51 in QEMU
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Arm GNU Toolchain
+        run: |
+          curl -fsSL "$ARM_TC_URL" -o tc.tar.xz
+          echo "$ARM_TC_SHA256  tc.tar.xz" | sha256sum -c -
+          mkdir -p "$HOME/arm" && tar -xJf tc.tar.xz -C "$HOME/arm"
+          echo "$HOME/arm/$ARM_TC/bin" >> "$GITHUB_PATH"
+      - name: QEMU, imgtool (for the Zephyr/MCUboot cases), pyserial, smp (the SMP client the mcumgr cases talk through)
+        run: |
+          sudo apt-get update && sudo apt-get install -y qemu-system-arm
+          pip install imgtool pyserial smp==4.3.0
+      - name: boot tests
+        run: python tests/qemu/test_qemu.py
+
+  avr:
+    name: AVR Lite core in simavr with avrdude
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: avr-gcc, simavr, avrdude
+        run: sudo apt-get update && sudo apt-get install -y gcc-avr avr-libc avrdude libsimavr-dev libsimavrparts1 libelf-dev
+      - name: uploads, trials, staged updates
+        env:
+          SIM_ROOT: /
+        run: python tests/avr/test_avr.py

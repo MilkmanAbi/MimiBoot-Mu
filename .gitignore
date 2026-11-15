@@ -1,0 +1,16 @@
+tests/mimiboot_tests
+tests/*.exe
+build*/
+keys/*.key
+*.mimg.bin
+
+release/
+build-mu*/
+__pycache__/
+build-console.log
+.config
+.config.old
+__pycache__/
+
+# fuzzer findings (kept by CI as an artifact)
+tests/fuzz/crashes/

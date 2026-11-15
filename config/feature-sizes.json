@@ -1,0 +1,464 @@
+{
+ "mcu": {
+  "board": "nucleo-f411re",
+  "base": 39576,
+  "options": {
+   "AB_TRIAL": {
+    "value": true,
+    "delta": 0
+   },
+   "CRASH_GUARD": {
+    "value": false,
+    "delta": -160
+   },
+   "ANTI_ROLLBACK": {
+    "value": false,
+    "delta": -284
+   },
+   "IMG_MCUBOOT": {
+    "value": true,
+    "delta": 1256
+   },
+   "IMG_RAW": {
+    "value": true,
+    "delta": 340
+   },
+   "RAM_IMAGES": {
+    "value": false,
+    "delta": -544
+   },
+   "BOOT_VERIFY=once": {
+    "value": "once",
+    "delta": -96
+   },
+   "BOOT_VERIFY=never": {
+    "value": "never",
+    "delta": -136
+   },
+   "SIGNATURES": {
+    "value": false,
+    "delta": -5616
+   },
+   "ECDSA": {
+    "value": true,
+    "delta": 3792
+   },
+   "LMS": {
+    "value": true,
+    "delta": 1988
+   },
+   "BOOT_RECORD": {
+    "value": true,
+    "delta": 372
+   },
+   "FAULT_HARDENING": {
+    "value": false,
+    "delta": -224
+   },
+   "CONSOLE": {
+    "value": false,
+    "delta": -17108
+   },
+   "SHELL": {
+    "value": false,
+    "delta": -13668
+   },
+   "SHELL_DIAG": {
+    "value": false,
+    "delta": -2308
+   },
+   "RECV": {
+    "value": false,
+    "delta": -1892
+   },
+   "SMP": {
+    "value": true,
+    "delta": 6056
+   },
+   "HANDOFF": {
+    "value": false,
+    "delta": -1748
+   },
+   "CONTROL": {
+    "value": false,
+    "delta": -704
+   },
+   "OS_HOOKS": {
+    "value": false,
+    "delta": -1380
+   },
+   "SCRUB_RAM": {
+    "value": true,
+    "delta": 16
+   },
+   "BOARD_LED": {
+    "value": false,
+    "delta": -64
+   },
+   "BOARD_BUTTON": {
+    "value": false,
+    "delta": -112
+   },
+   "TWO_STAGE": {
+    "value": true,
+    "delta": 172
+   }
+  }
+ },
+ "avr": {
+  "board": "uno",
+  "base": 1604,
+  "options": {
+   "STK500": {
+    "value": false,
+    "delta": -1012
+   },
+   "EEPROM_RW": {
+    "value": false,
+    "delta": -60
+   },
+   "ENTRY=every-reset": {
+    "value": "every-reset",
+    "delta": 6
+   },
+   "TIMEOUT_MS=250": {
+    "value": "250",
+    "delta": -2
+   },
+   "TIMEOUT_MS=500": {
+    "value": "500",
+    "delta": -2
+   },
+   "TIMEOUT_MS=2000": {
+    "value": "2000",
+    "delta": 0
+   },
+   "TIMEOUT_MS=4000": {
+    "value": "4000",
+    "delta": 0
+   },
+   "TIMEOUT_MS=8000": {
+    "value": "8000",
+    "delta": 0
+   },
+   "VERIFY=none": {
+    "value": "none",
+    "delta": -466
+   },
+   "NOAPP_STAY": {
+    "value": false,
+    "delta": 72
+   },
+   "APP_REQUEST": {
+    "value": false,
+    "delta": -20
+   },
+   "LITE_HANDOFF": {
+    "value": false,
+    "delta": -14
+   },
+   "LITE_TRIAL": {
+    "value": true,
+    "delta": 78
+   },
+   "SPM_API": {
+    "value": true,
+    "delta": 96
+   },
+   "LED": {
+    "value": false,
+    "delta": -18
+   }
+  }
+ },
+ "boards": {
+  "netduinoplus2": {
+   "flash": 39400,
+   "region": 49152,
+   "ram": 11416,
+   "ram_region": 12288
+  },
+  "stm32vldiscovery": {
+   "flash": 29632,
+   "region": 32768,
+   "ram": 7112,
+   "ram_region": 7168
+  },
+  "netduino2": {
+   "flash": 39244,
+   "region": 49152,
+   "ram": 11416,
+   "ram_region": 12288
+  },
+  "bluepill": {
+   "flash": 20812,
+   "region": 24576,
+   "ram": 10376,
+   "ram_region": 11264
+  },
+  "bluepill-128k": {
+   "flash": 31256,
+   "region": 32768,
+   "ram": 8344,
+   "ram_region": 9216
+  },
+  "stm32f103rc-generic": {
+   "flash": 39080,
+   "region": 49152,
+   "ram": 11416,
+   "ram_region": 12288
+  },
+  "stm32f103re-generic": {
+   "flash": 39080,
+   "region": 65536,
+   "ram": 11416,
+   "ram_region": 12288
+  },
+  "nucleo-f103rb": {
+   "flash": 31276,
+   "region": 32768,
+   "ram": 8344,
+   "ram_region": 9216
+  },
+  "nucleo-f030r8": {
+   "flash": 14996,
+   "region": 24576,
+   "ram": 7108,
+   "ram_region": 7168
+  },
+  "nucleo-f072rb": {
+   "flash": 32420,
+   "region": 32768,
+   "ram": 8344,
+   "ram_region": 9216
+  },
+  "nucleo-f303re": {
+   "flash": 39428,
+   "region": 65536,
+   "ram": 11416,
+   "ram_region": 12288
+  },
+  "blackpill-f401cc": {
+   "flash": 31624,
+   "region": 32768,
+   "ram": 8344,
+   "ram_region": 9216
+  },
+  "blackpill-f411ce": {
+   "flash": 39564,
+   "region": 49152,
+   "ram": 11416,
+   "ram_region": 12288
+  },
+  "nucleo-f401re": {
+   "flash": 39576,
+   "region": 49152,
+   "ram": 11416,
+   "ram_region": 12288
+  },
+  "nucleo-f411re": {
+   "flash": 39576,
+   "region": 49152,
+   "ram": 11416,
+   "ram_region": 12288
+  },
+  "nucleo-f446re": {
+   "flash": 39576,
+   "region": 49152,
+   "ram": 11416,
+   "ram_region": 12288
+  },
+  "stm32f4-discovery": {
+   "flash": 39580,
+   "region": 49152,
+   "ram": 11416,
+   "ram_region": 12288
+  },
+  "nucleo-f746zg": {
+   "flash": 39608,
+   "region": 65536,
+   "ram": 11416,
+   "ram_region": 12288
+  },
+  "nucleo-l432kc": {
+   "flash": 39476,
+   "region": 49152,
+   "ram": 11416,
+   "ram_region": 12288
+  },
+  "nucleo-l476rg": {
+   "flash": 39588,
+   "region": 65536,
+   "ram": 11416,
+   "ram_region": 12288
+  },
+  "nucleo-g031k8": {
+   "flash": 14900,
+   "region": 24576,
+   "ram": 7108,
+   "ram_region": 7168
+  },
+  "nucleo-g071rb": {
+   "flash": 32412,
+   "region": 32768,
+   "ram": 8344,
+   "ram_region": 9216
+  },
+  "nucleo-g0b1re": {
+   "flash": 40524,
+   "region": 49152,
+   "ram": 11416,
+   "ram_region": 12288
+  },
+  "nucleo-g431rb": {
+   "flash": 31504,
+   "region": 32768,
+   "ram": 8344,
+   "ram_region": 9216
+  },
+  "nucleo-g474re": {
+   "flash": 39460,
+   "region": 49152,
+   "ram": 11416,
+   "ram_region": 12288
+  },
+  "nrf52840dk": {
+   "flash": 39256,
+   "region": 49152,
+   "ram": 11420,
+   "ram_region": 12288
+  },
+  "nrf52dk": {
+   "flash": 39252,
+   "region": 49152,
+   "ram": 11420,
+   "ram_region": 12288
+  },
+  "nrf52833dk": {
+   "flash": 39256,
+   "region": 49152,
+   "ram": 11420,
+   "ram_region": 12288
+  },
+  "feather-nrf52840": {
+   "flash": 39268,
+   "region": 49152,
+   "ram": 11420,
+   "ram_region": 12288
+  },
+  "xiao-nrf52840": {
+   "flash": 39204,
+   "region": 49152,
+   "ram": 11420,
+   "ram_region": 12288
+  },
+  "nano33ble": {
+   "flash": 39208,
+   "region": 49152,
+   "ram": 11420,
+   "ram_region": 12288
+  },
+  "microbit-v2": {
+   "flash": 39208,
+   "region": 49152,
+   "ram": 11420,
+   "ram_region": 12288
+  },
+  "nrf52dk-nrf52810": {
+   "flash": 31392,
+   "region": 32768,
+   "ram": 8352,
+   "ram_region": 9216
+  },
+  "nrf52840dk-nrf52811": {
+   "flash": 31396,
+   "region": 32768,
+   "ram": 8352,
+   "ram_region": 9216
+  },
+  "nrf52833dk-nrf52820": {
+   "flash": 39320,
+   "region": 49152,
+   "ram": 11424,
+   "ram_region": 12288
+  },
+  "microbit": {
+   "flash": 40496,
+   "region": 49152,
+   "ram": 11420,
+   "ram_region": 12288
+  },
+  "arduino-zero": {
+   "flash": 40600,
+   "region": 49152,
+   "ram": 11420,
+   "ram_region": 12288
+  },
+  "mkrzero": {
+   "flash": 40592,
+   "region": 49152,
+   "ram": 11420,
+   "ram_region": 12288
+  },
+  "feather-m0": {
+   "flash": 40596,
+   "region": 49152,
+   "ram": 11420,
+   "ram_region": 12288
+  },
+  "trinket-m0": {
+   "flash": 40588,
+   "region": 49152,
+   "ram": 11420,
+   "ram_region": 12288
+  },
+  "xiao-samd21": {
+   "flash": 40596,
+   "region": 49152,
+   "ram": 11420,
+   "ram_region": 12288
+  },
+  "feather-m4": {
+   "flash": 39388,
+   "region": 49152,
+   "ram": 11416,
+   "ram_region": 12288
+  },
+  "samd51j20a": {
+   "flash": 39312,
+   "region": 49152,
+   "ram": 11416,
+   "ram_region": 12288
+  },
+  "wio-terminal": {
+   "flash": 39472,
+   "region": 49152,
+   "ram": 11416,
+   "ram_region": 12288
+  },
+  "uno": {
+   "flash": 1604,
+   "region": 2048
+  },
+  "pro-mini-3v3": {
+   "flash": 1604,
+   "region": 2048
+  },
+  "diecimila": {
+   "flash": 1604,
+   "region": 2048
+  },
+  "sanguino-644p": {
+   "flash": 1602,
+   "region": 2048
+  },
+  "mighty-1284p": {
+   "flash": 1790,
+   "region": 2048
+  },
+  "mega2560": {
+   "flash": 1790,
+   "region": 2048
+  }
+ }
+}
