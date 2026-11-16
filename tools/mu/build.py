@@ -218,7 +218,7 @@ def build_mcu(cfg: Config, out: Path, log=print) -> dict:
     objcopy = _tool(gcc, "objcopy")
     _run([objcopy, "-O", "binary", elf, out / "mimiboot.bin"])
     _run([objcopy, "-O", "ihex", elf, out / "mimiboot.hex"])
-    gen.mcu_outputs(cfg, lay, out)
+    gen.mcu_outputs(cfg, lay, out, loader_ram)
     info = {"board": t.name, "core": "komorebi", "build": "mcu", "vendor": t.get("vendor"), "flash_used": sz["flash"], "flash_region": room,
             "ram_used": sz["ram"], "ram_region": loader_ram, "stack": stack,
             "features": {o.id: cfg.effective(o.id) for o in cfg.options()},
@@ -315,7 +315,7 @@ def _build_two_stage(cfg: Config, out: Path, gcc: str, recipe: dict, ram: int, s
     for n in ("stage1-measure", "stage0-measure"):
         for ext in (".elf", ".map", ".ld", "_config.h"):
             (out / (n + ext)).unlink(missing_ok=True)
-    gen.mcu_outputs(cfg, lay, out)
+    gen.mcu_outputs(cfg, lay, out, loader_ram)
     info = {"board": t.name, "core": "komorebi", "build": "mcu", "vendor": t.get("vendor"), "two_stage": True,
             "flash_used": sz1["flash"], "flash_region": room1, "stage0_used": sz0["flash"], "stage0_region": room0,
             "ram_used": max(sz0["ram"], sz1["ram"]), "ram_region": loader_ram, "stack": stack,

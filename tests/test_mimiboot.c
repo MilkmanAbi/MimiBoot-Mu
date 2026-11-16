@@ -163,6 +163,30 @@ static void test_empty(void) {
     CHECK(o == SIM_CONSOLE_IDLE && strstr(sim.out, "nothing bootable"), "console says nothing bootable");
 }
 
+// 1 KB erase pages (STM32F103): slots that aren't a multiple of the core's 4 KB sector_size
+static int erase_1k(uint32_t off, size_t len) {
+    if (off % 1024 || len % 1024 || off + len > SIM_FLASH_SIZE) return MB_E_BADARG;
+    memset(sim_flash + off, 0xFF, len);
+    return MB_OK;
+}
+
+static void test_odd_slot_size(void) {
+    printf("slot size not a multiple of 4 KB (1 KB pages)\n");
+    sim_reset();
+    mb_layout_t lay = *sim_port.layout;
+    lay.slot[0].size = 0x9800;                       // 38 KB, as on a Nucleo-F103RB with a 48 KB bootloader
+    mb_port_t p = sim_port;
+    p.layout = &lay;
+    p.flash_erase = erase_1k;
+    uint32_t end = lay.slot[0].offset + lay.slot[0].size;
+    memset(sim_flash + lay.slot[0].offset, 0x00, lay.slot[0].size + 4096);
+    CHECK(mb_slot_erase(&p, 0, lay.slot[0].size - MB_IMG_PAYLOAD_OFF) == MB_OK, "the largest payload that fits");
+    CHECK(sim_flash[end - 1] == 0xFF && sim_flash[end] == 0x00, "erased to the slot's end, not past it");
+    CHECK(mb_slot_erase(&p, 0, lay.slot[0].size - MB_IMG_PAYLOAD_OFF - 3000) == MB_OK, "within 4 KB of the end");
+    CHECK(mb_slot_erase(&p, 0, lay.slot[0].size - MB_IMG_PAYLOAD_OFF + 1) == MB_E_NOSPACE, "one byte more: no space");
+    CHECK(mb_slot_erase(&p, 0, 0xFFFFF800u) == MB_E_NOSPACE, "a size that wraps: no space");
+}
+
 static void test_first_install(void) {
     printf("first install, trial, confirm\n");
     sim_reset();
@@ -2667,6 +2691,7 @@ int main(int argc, char** argv) {
     test_hashes();
     test_crypto();
     test_empty();
+    test_odd_slot_size();
     test_first_install();
     test_update_rollback();
     test_bad_hash();

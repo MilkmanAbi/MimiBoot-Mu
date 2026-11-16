@@ -317,15 +317,20 @@ def main():
     data = _json.loads(page.split('type="application/json">', 1)[1].split("</script>", 1)[0])
     check({b["name"] for b in data["boards"]} == set(db.boards), "site: every board in the matrix")
     stm = [b for b in data["boards"] if b["family"] == "stm32"]
-    check(stm and all(b["flash_writes"] == "built" and "never" in b["never_ran"] for b in stm),
-          "site: no STM32 board claims a flash write ran")
+    check(stm and all(b["flash_writes"] == ("hardware" if b["name"] == "nucleo-f103rb" else "built")
+                      and "never" in b["never_ran"] for b in stm),
+          "site: only the Nucleo-F103RB claims STM32 flash writes ran")
     check("ST-Link" in page and "connect under reset" in page, "site: the ST-Link warning is on the matrix page")
     hw = {b["name"] for b in data["boards"] if any(f[3] == "hardware" for f in b["f"])}
-    check(hw <= {"pico", "rp2350-lcd"}, "site: only the RP boards that ran have hardware-level features")
-    check({b["name"] for b in data["boards"] if b["flash_writes"] == "hardware"} <= {"rp2350-lcd"},
-          "site: hardware flash writes only on the board that ran them")
-    check(all("earlier build" in f[4] for b in data["boards"] for f in b["f"] if f[3] == "hardware"),
-          "site: every hardware-level feature says it was an earlier build")
+    check(hw <= {"pico", "rp2350-lcd", "nucleo-f103rb"}, "site: only the boards that ran have hardware-level features")
+    check({b["name"] for b in data["boards"] if b["flash_writes"] == "hardware"} <= {"rp2350-lcd", "nucleo-f103rb"},
+          "site: hardware flash writes only on the boards that ran them")
+    check(all(("3.0.0" if b["name"] == "nucleo-f103rb" else "earlier build") in f[4]
+              for b in data["boards"] for f in b["f"] if f[3] == "hardware"),
+          "site: every hardware-level feature says which build ran it")
+    f103 = next(b for b in data["boards"] if b["name"] == "nucleo-f103rb")
+    check(not {f[0] for f in f103["f"] if f[3] == "hardware"} & {"BOARD_LED", "BOARD_BUTTON", "SMP", "TWO_STAGE"},
+          "site: the F103 claims only what its run tried")
 
     # presets on a small part leave the chip's trims alone
     c = Config(db, "nucleo-g031k8")

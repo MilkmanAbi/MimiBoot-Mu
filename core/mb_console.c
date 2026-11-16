@@ -585,7 +585,7 @@ static void draw_menu(const mb_port_t* p, const mb_bcl_t* log, const mb_config_t
         mb_printf(p, "%s\033[0m\n", i == dflt ? "  <- default" : "");
     }
     put(p, MB_FEAT_SHELL ? "\n   e  edit args    c  command line    r  reboot" : "\n   e  edit args    r  reboot");
-    put(p, p->reboot_rom ? "    u  USB bootloader\n\n" : "\n\n");
+    put(p, p->reboot_rom ? "    u  ROM loader\n\n" : "\n\n");
     if (secs >= 0) mb_printf(p, "   booting %s in %d s, any key stops the countdown   ", cfg->e[dflt].name, secs);
     else put(p, "   up/down + enter, or 1-8                                    ");
 }

@@ -235,9 +235,10 @@ needs v2 says `MB_E_UNSUPP` without it. `mb_client_capabilities()` and
 - **Only where RAM survives a reset.** The mailbox is on for STM32, nRF and
   SAM D. The RP ports don't declare it yet (the boot ROM's use of SRAM across
   a watchdog reset hasn't been checked), so there requests go through flash.
-- **Not run on hardware.** The mailbox has run in the simulator, in fuzzing,
-  and across real resets in QEMU (STM32F405). The nRF System OFF path and the
-  RP watchdog fallback have not run anywhere.
+- **Hardware: one STM32 so far.** The mailbox, `mbctl`, panics and faults ran on
+  a Nucleo-F103RB, and before that in the simulator, in fuzzing and across real
+  resets in QEMU (STM32F405). The nRF System OFF path and the RP watchdog
+  fallback have not run anywhere.
 
 ## The AVR Lite core
 

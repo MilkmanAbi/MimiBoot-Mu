@@ -13,11 +13,12 @@ rerun it, rebuild.
 [before you flash](https://milkmaidabi.github.io/MimiBoot-Mu-Docs/before-you-flash.html)
 
 > **Status: most of this hasn't run on real hardware yet.** Earlier builds of the
-> RP2040 and RP2350 ports have run on real boards. Everything else has run in emulators
-> (QEMU, simavr), against register models, or has only been compiled.
-> **On STM32, no flash write has ever run on a real chip**: keep an ST-Link on SWD while
-> you try one, and check that you can connect under reset before you start. On nRF and
-> SAM D, have an SWD probe ready; on AVR, an ISP programmer. The
+> RP2040 and RP2350 ports have run on real boards, and 3.0.0 has run on a Nucleo-F103RB
+> (uploads, A/B updates with trials, the OS hooks, signatures). Everything else has run
+> in emulators (QEMU, simavr), against register models, or has only been compiled.
+> **On STM32, only the F0/F1/F3 flash driver has run on a chip**: keep an ST-Link on SWD
+> while you try a board, and check that you can connect under reset before you start. On
+> nRF and SAM D, have an SWD probe ready; on AVR, an ISP programmer. The
 > [feature matrix](https://milkmaidabi.github.io/MimiBoot-Mu-Docs/matrix.html) shows how
 > far each feature has been tested on each board.
 

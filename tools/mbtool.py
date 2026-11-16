@@ -129,11 +129,24 @@ def read_elf(data):
     e_machine = struct.unpack_from("<H", data, 18)[0]
     e_phoff, e_shoff = struct.unpack_from("<II", data, 28)
     e_phentsize, e_phnum, e_shentsize, e_shnum, e_shstrndx = struct.unpack_from("<HHHHH", data, 42)
+    # file ranges of the sections that hold loadable bytes (SHF_ALLOC, not NOBITS)
+    secs = []
+    for i in range(e_shnum if e_shoff else 0):
+        sh = struct.unpack_from("<IIIIIIIIII", data, e_shoff + i * e_shentsize)
+        if sh[1] != 8 and sh[2] & 2 and sh[5]:
+            secs.append((sh[4], sh[4] + sh[5]))
     segs = []
     for i in range(e_phnum):
         p_type, p_offset, p_vaddr, p_paddr, p_filesz, p_memsz, _, _ = struct.unpack_from("<IIIIIIII", data, e_phoff + i * e_phentsize)
         if p_type == 1 and p_filesz:
-            segs.append((p_paddr, data[p_offset:p_offset + p_filesz]))
+            # A segment may start before its first section: when the link address isn't
+            # page aligned, the linker maps the ELF and program headers in front of it.
+            # Keep only what the sections cover, like objcopy -O binary does.
+            inside = [(lo, hi) for lo, hi in secs if p_offset <= lo < p_offset + p_filesz]
+            lo = min((s for s, _ in inside), default=p_offset)
+            hi = max((min(e, p_offset + p_filesz) for _, e in inside), default=p_offset + p_filesz)
+            if hi > lo:
+                segs.append((p_paddr + lo - p_offset, data[lo:hi]))
     if not segs:
         die("no loadable segments in the ELF")
     base = min(a for a, _ in segs)
@@ -466,7 +479,10 @@ def pack_mcu(a, payload, base, arch, handoff):
     """Cortex-M MCUs other than RP: XIP images are linked at their slot's address + 0x1000."""
     if any(lo <= base < lo + size for lo, size in MCU_FLASH):
         load_type, load_addr = LOAD_CHAIN, 0
-        if base % 4096:
+        # Slots start on an erase sector (as small as 256 bytes on SAM D21, 1 KB on many
+        # STM32s), so a slot address needn't be 4 KB aligned. The bootloader checks the
+        # chip's own vector table alignment when it boots the image.
+        if base % 256:
             die("the vector table (0x%08x) must sit 0x1000 into a slot: link at <slot address> + 0x1000 (layout.txt)" % base)
     elif SRAM_BASE <= base < 0x20200000:
         load_type, load_addr = LOAD_RAM, base
@@ -848,7 +864,14 @@ def send_image(s, img, payload, ready_timeout=10):
         s.write(b"S" + struct.pack("<H", len(sig)) + sig + struct.pack("<I", zlib.crc32(sig) & 0xFFFFFFFF))
         out, m = read_until(s, r"MB (OK|ERR[^\r\n]*)\r?\n", 180)
     if not m or m.group(1) != "OK":
-        die("header rejected: " + (m.group(0) if m else out[-200:]))
+        why = m.group(0).strip() if m else out[-200:]
+        hint = {"-3": "the header doesn't suit this slot: the image is bigger than the slot, or it's linked "
+                      "for another address (layout.txt says where and how big)",
+                "-5": "built for another chip (--target), or this build lacks what the image needs",
+                "-6": "timed out", "-7": "the board won't put it there (the stage 1 it is running from)",
+                "-8": "unsigned, or not signed by a key this board trusts"}
+        code = re.search(r"\((-\d+)\)", why)
+        die("header rejected: " + why + ("; " + hint[code.group(1)] if code and code.group(1) in hint else ""))
     t0 = time.time()
     off = 0
     while off < len(payload):

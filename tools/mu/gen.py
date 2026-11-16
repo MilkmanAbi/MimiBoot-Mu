@@ -491,8 +491,9 @@ SECTIONS {{
 """
 
 
-def mcu_outputs(cfg: Config, lay: Layout, out: Path):
-    """layout.json / layout.txt / zephyr overlay / app linker snippets / client recipe"""
+def mcu_outputs(cfg: Config, lay: Layout, out: Path, loader_ram: int | None = None):
+    """layout.json / layout.txt / zephyr overlay / app linker snippets / client recipe.
+    loader_ram: how much RAM the bootloader takes (at the top of RAM)."""
     t = cfg.t
     fb, rb = flash_base(cfg), ram_base(cfg)
     mh = mcuboot_hdr(cfg)
@@ -505,6 +506,7 @@ def mcu_outputs(cfg: Config, lay: Layout, out: Path):
     resv = ram_reserved(cfg)
     doc = {"board": t.name, "target": t.chip_name[:15], "flash_base": fb, "flash_size": lay.flash_size,
            "ram_base": rb, "ram_reserved": resv, "mcuboot_header": mh,
+           "loader_ram": rb + mcu_ram(cfg)[0] - loader_ram if loader_ram else None,
            "boot": {"offset": lay.boot.offset, "size": lay.boot.size},
            "floor": ({"offset": floor_region(cfg, lay)[0], "size": floor_region(cfg, lay)[1]} if floor_region(cfg, lay) else None),
            "log": [{"offset": r.offset, "size": r.size} for r in lay.log],
@@ -534,6 +536,11 @@ def mcu_outputs(cfg: Config, lay: Layout, out: Path):
     if resv:
         rows += ["", f"RAM: apps start at 0x{rb + resv:08x}; keep RAM[0x{rb:08x} : 0x{rb + resv:08x}] free "
                      f"({'vector table copy' if vector_mode(cfg) == 'remap' else 'vector relay word'}: this chip has no VTOR)"]
+    ram_all, _ = mcu_ram(cfg)
+    if loader_ram and loader_ram < ram_all and cfg.effective("HANDOFF"):
+        rows += ["", f"Handoff: keep the app's mb_handoff buffer (MB_HANDOFF_BUFFER) below 0x{rb + ram_all - loader_ram:08x}. "
+                     "From there up is the bootloader's",
+                 "RAM while it runs, so it writes no handoff there (the app's RAM is free to use it afterwards)."]
     rows += [""] + [f"note: {n}" for n in lay.notes]
     (out / "layout.txt").write_text("\n".join(rows) + "\n")
     # an app linker MEMORY snippet per slot (MimiBoot images)
@@ -565,6 +572,15 @@ def client_recipe(cfg: Config, out: Path) -> str:
     srcs = " \\\n    ".join((ROOT / s).as_posix() for s in client_sources(cfg))
     vendor = cfg.t.get("vendor")
     extra = " -fno-delete-null-pointer-checks" if flash_base(cfg) == 0 else ""
+    lj = out / "layout.json"
+    below = json.loads(lj.read_text()).get("loader_ram") if lj.exists() else None
+    where = (f"\n                                               /* below 0x{below:08x}: from there up is the bootloader's"
+             f"\n                                                  RAM, and it writes no handoff there */") if below else ""
+    if vendor == "stm32":
+        ran = ("On STM32 these ran on an F103RB (the F0/F1/F3 flash driver); the F2/F4/F7 and\n"
+               "L4/G0/G4 drivers have not run on hardware yet (docs/HARDWARE-STATUS.md).")
+    else:
+        ran = f"None of the flash-writing calls has run on {vendor.upper()} hardware yet (docs/HARDWARE-STATUS.md)."
     return f"""MimiBoot-Mu app side for {cfg.t.name}: status, confirm, requests, A/B install, OTA.
 Compile these with your app (same -mcpu as the app, any optimisation):
 
@@ -577,7 +593,7 @@ Use the same mimiboot_config.h as the bootloader on the board (it carries the la
 
     #include "client/mb_client.h"
     extern const mb_port_t mb_mcu_port;
-    MB_HANDOFF_BUFFER;                         /* optional; put .uninitialized_data* in a NOLOAD section */
+    MB_HANDOFF_BUFFER;                         /* optional; put .uninitialized_data* in a NOLOAD section */{where}
     mb_client_init(&mb_mcu_port);
     mb_client_set_handoff(&mb_handoff);        /* args, how we were booted */
     if (st.state == MB_ST_TRIAL) mb_client_confirm();   /* after mb_client_status(&st) */
@@ -587,7 +603,7 @@ Flash writes stall the CPU while they run: fine for an app, keep interrupt
 latency in mind. mb_client_install_write(): pass chunks that start on a
 {CHUNK[vendor]} boundary; 256-byte-aligned chunks work on every chip.
 
-None of the flash-writing calls has run on {vendor.upper()} hardware yet (docs/HARDWARE-STATUS.md).
+{ran}
 """
 
 

@@ -393,9 +393,12 @@ int mb_slot_erase(const mb_port_t* p, int slot, uint32_t bytes) {
     if (slot < 0 || slot >= p->layout->n_slots) return MB_E_BADARG;
     const mb_slot_def_t* r = &p->layout->slot[slot];
     uint32_t ss = p->layout->sector_size;
-    uint32_t len = MB_IMG_PAYLOAD_OFF + bytes;
-    len = (len + ss - 1) / ss * ss;
-    if (len > r->size) return MB_E_NOSPACE;
+    uint32_t need = MB_IMG_PAYLOAD_OFF + bytes;
+    if (bytes > r->size || need > r->size) return MB_E_NOSPACE;
+    uint32_t len = (need + ss - 1) / ss * ss;
+    // A slot needn't be a multiple of sector_size (1 KB STM32 pages: a 38 KB slot),
+    // but it always ends on a real erase boundary: erase up to there.
+    if (len > r->size) len = r->size;
     int rc = p->flash_erase(r->offset, ss);
     if (rc == MB_OK && len > ss) rc = p->flash_erase(r->offset + ss, len - ss);
 #if MB_FEAT_IMG_MCUBOOT

@@ -51,11 +51,22 @@ EMULATOR = {
 # Only what was recorded running: the RP2350 run of 28 October 2026 (boot from a slot, the SHA-256 check,
 # trial + confirm, flash mode with an mbtool upload). The RP2040 board ran an earlier build too, with no
 # record of which features, so only booting an image from flash and the console count.
+# The Nucleo-F103RB ran 3.0.0 itself on 16 November 2026 (docs/HARDWARE-STATUS.md, "Nucleo-F103RB"):
+# only what that run exercised is listed (not the button, LED or anything it didn't try).
 HARDWARE = {
     "pico": {"LAYOUT", "IMG_NATIVE", "CONSOLE"},
     "rp2350-lcd": {"LAYOUT", "IMG_NATIVE", "BOOT_VERIFY", "CONSOLE", "SHELL", "RECV", "AB_TRIAL", "TRIES"},
+    "nucleo-f103rb": {"LAYOUT", "IMG_NATIVE", "BOOT_VERIFY", "SIGNATURES", "ECDSA", "LMS", "REQUIRE_SIGNATURE",
+                      "CONSOLE", "SHELL", "RECV", "MENU_SECS", "BREAK_IN_MS", "BAUD", "HANDOFF", "CONTROL",
+                      "OS_HOOKS", "AB_TRIAL", "TRIES", "TRIAL_WATCHDOG", "TRIAL_MS", "CRASH_GUARD", "ANTI_ROLLBACK"},
 }
+HW_NOTES = {"nucleo-f103rb": "on MimiBoot-Mu 3.0.0 (16 November 2026)"}
 HW_NOTE = "on an earlier build (MimiBoot 2.0), before the options existed"
+
+
+def hw_note(board: str) -> str:
+    return HW_NOTES.get(board, HW_NOTE)
+
 # options whose logic the host tests cover (tests/run.py, tests/test_profiles.py, the fuzzers)
 HOST = {"LAYOUT", "AUX_SLOTS", "AB_TRIAL", "TRIES", "TRIAL_WATCHDOG", "TRIAL_MS", "CRASH_GUARD", "ANTI_ROLLBACK",
         "IMG_NATIVE", "IMG_MCUBOOT", "IMG_RAW", "RAM_IMAGES", "BOOT_VERIFY", "SIGNATURES", "ECDSA", "LMS",
@@ -73,18 +84,19 @@ NOTES = {
     "DEBUG_LOCK": "never run; on nRF52 it closes the debug port until a full erase",
     "PROTECTED_FLOOR": "nRF51 in QEMU through the real NVMC driver; not on nRF52",
     "CONSOLE_USB": "never enumerated: no SAM D board here",
-    "TRIAL_WATCHDOG": "the watchdog drivers never ran on a chip",
+    "TRIAL_WATCHDOG": "the STM32 IWDG ran on an F103; the nRF and SAM D watchdogs never ran on a chip",
     "ENCRYPTED_IMAGES": "timing of X25519 / AES not measured on silicon",
-    "LMS": "check time not measured on silicon",
-    "OS_HOOKS": "the mailbox ran across real resets in QEMU (STM32F405); System OFF never ran",
+    "LMS": "an H10/W4 check takes 0.36 s on an STM32F103 at 8 MHz (Ed25519 13.2 s, P-256 2.5 s)",
+    "OS_HOOKS": "the mailbox ran on an STM32F103 and across real resets in QEMU (STM32F405); System OFF never ran",
     "TWO_STAGE": "both stages ran in QEMU (nRF51, STM32F405); the STM32 store write never ran",
     "SMP": "QEMU nRF51 with the smp library; no mcumgr CLI has talked to it",
 }
 # per family: the parts that never ran, whatever the options
 NEVER_RAN = {
-    "stm32": "No STM32 flash write has ever run: QEMU has no STM32 flash controller, so the erase/program drivers "
-             "(F0/F1/F3, F2/F4/F7, L4/G0/G4) are written from the reference manuals and never executed. Uploads, "
-             "the boot log, confirms and floors all write flash.",
+    "stm32": "STM32 hardware so far is one Nucleo-F103RB (3.0.0, 16 November 2026), which ran the F0/F1/F3 flash "
+             "driver. The F2/F4/F7 and L4/G0/G4 flash drivers have never run on a chip (QEMU has no STM32 flash "
+             "controller), nor have the other families' clocks, pins and watchdog. Uploads, the boot log, confirms "
+             "and floors all write flash.",
     "nrf": "nRF51 ran in QEMU. On nRF52 the UARTE console, the HF crystal start, APPROTECT, the watchdog, GPIO port 1 "
            "and VTOR have never run.",
     "samd": "The flash driver ran against a register model; clocks, SERCOM, PORT, the watchdog and USB never ran.",
@@ -107,6 +119,8 @@ def _flash_level(board: str, cfg: Config) -> str:
         return "emulator" if board == "uno" else "built"
     if fam == "pico":       # the RP2350 boot-ROM erase/program path ran (earlier build); RP2040's: no record
         return "hardware" if board == "rp2350-lcd" else "built"   # the board that ran (Arm)
+    if fam == "stm32" and board == "nucleo-f103rb":
+        return "hardware"
     return FLASH_WRITES.get(fam, "built")
 
 
@@ -148,7 +162,7 @@ def board_data(db: Db, board: str) -> dict:
             "chip": t.chip_name, "cpu": t.get("cpu") or t.get("mcu") or t.get("platform") or "",
             "memory": facts.get("memory", ""), "console": facts.get("console", ""), "core": t.core,
             "family": fam, "status": t.status, "status_text": STATUS_TEXT.get(t.status, ""),
-            "flash_writes": _flash_level(board, cfg), "status_note": HW_NOTE if t.status == "hardware" else "", "never_ran": NEVER_RAN.get(fam if fam != "mcu" else "", ""),
+            "flash_writes": _flash_level(board, cfg), "status_note": hw_note(board) if t.status == "hardware" else "", "never_ran": NEVER_RAN.get(fam if fam != "mcu" else "", ""),
             "features": feats}
 
 
@@ -165,7 +179,7 @@ def compact(data: dict) -> dict:
         for f in b["features"]:
             options[f["id"]] = [f["title"], f["menu"], NOTES.get(f["id"], "")]
             extra = "; ".join(x for x in ("off by default: too big for this chip" if "too big" in f["note"] else "",
-                                           HW_NOTE if f["level"] == "hardware" else "") if x)
+                                           hw_note(b["name"]) if f["level"] == "hardware" else "") if x)
             rows.append([f["id"], f["avail"], f["default"], f["level"], extra])
         boards.append({**{k: v for k, v in b.items() if k != "features"}, "f": rows})
     return {"menus": data["menus"], "options": options, "boards": boards}
@@ -183,9 +197,9 @@ actually been run. Pick a board, or open a maker below. The same facts in words 
 <a href="before-you-flash.html">Before you flash</a>.</p>
 
 <div class="warn-box">
-<strong>STM32 users: keep an ST-Link (SWD) connected.</strong> No STM32 flash write has ever run on a real chip:
-QEMU has no STM32 flash controller, so the erase and program drivers are written from the reference manuals and
-have never executed. Uploads, the boot log, confirming an image and the rollback floors all write flash. Until a
+<strong>STM32 users: keep an ST-Link (SWD) connected.</strong> STM32 flash writes have run on one board so far, a
+Nucleo-F103RB (the F0/F1/F3 driver). The F2/F4/F7 and L4/G0/G4 drivers have never run on a chip: QEMU has no STM32
+flash controller. Uploads, the boot log, confirming an image and the rollback floors all write flash. Until your
 board has been tried, wire SWD (an ST-Link, or the one on a Nucleo), make sure STM32CubeProgrammer can
 <em>connect under reset</em> and mass-erase it, and don't touch readout protection (RDP level 2 can't be undone).
 On most families, holding BOOT0 high at reset starts the chip's own ROM loader; on STM32G0 the factory option bytes
